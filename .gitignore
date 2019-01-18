@@ -1,0 +1,9 @@
+*.swp
+*.swo
+*.DS_Store
+tags
+doc
+data/MPI-Sintel*
+data/*.bin
+samples/build
+
