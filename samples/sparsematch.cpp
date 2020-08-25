@@ -3,8 +3,8 @@
 using namespace std;
 int main(int argc, char** argv) {
   std::string forestPath   = "../../forests/defaultZeroForest.txt";
-  std::string leftImgPath = "../../data/kitti/img0l.png";
-  std::string rightImgPath = "../../data/kitti/img0r.png";
+  std::string leftImgPath = "../../data/kitti/training/image_0/000000_10.png";
+  std::string rightImgPath = "../../data/kitti/training/image_1/000000_10.png";
 
   if(argc == 4){
     forestPath = argv[1];
@@ -15,7 +15,7 @@ int main(int argc, char** argv) {
     cout << "Trying defaults:" << endl;
     cout << "Forest path: " << forestPath << endl;
     cout << "Left image : " << leftImgPath << endl;
-    cout << "Right image: " << leftImgPath << endl;
+    cout << "Right image: " << rightImgPath << endl;
   }
   ndb::Buffer<uint8_t> simg, timg;
 
@@ -51,6 +51,8 @@ int main(int argc, char** argv) {
   std::vector<ndb::Support> supp = forest.rectifiedMatch(simgP,timgP, fm, inferencesettings); 
   gpc::inference::time_point t2 = gpc::inference::sysTick();
   cout << "tPreprocess: " << gpc::inference::tickToMs(t1,t0) << " ms"
+    << ", #candidatesL:" << simgP.mask.size() 
+    << ", #candidatesR:" << timgP.mask.size() 
     << ", tMatch: " << gpc::inference::tickToMs(t2,t1)  << " ms"
     << ", num matches:" << supp.size() << endl;
 
