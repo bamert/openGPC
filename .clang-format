@@ -1,0 +1,31 @@
+# Clang-tidy / Clang-format are sufficiently developed to parse our code without workarounds.
+# Remaining issues are:
+# -pragmas can't be indented (used by OpenMP). We want them indented.
+# The following is meant well, but doesn't do what we want.
+IndentPPDirectives: BeforeHash
+# -We don't want public/private to be indented differently.
+Language: Cpp
+# We base our style on google and use 4 spaces for indentation
+BasedOnStyle: Google
+IndentWidth: 4 
+
+# Do not collapse small functions onto a single line
+AllowShortFunctionsOnASingleLine: Inline
+
+# Don't indent namespaces
+NamespaceIndentation: None
+
+# Don't change comment headers
+# ReflowComments: false
+AlignAfterOpenBracket: AlwaysBreak
+BinPackParameters: false
+
+# Do not resort includes.
+# Reconsider using this, because the USING statements are still resorted and can't be disabled
+SortIncludes: false
+
+ColumnLimit: 90
+#Align access modifiers with class def (IndentAccessModifiers: true should do the same from Clang 2)
+AccessModifierOffset: -4
+Standard: c++17
+UseTab: Never

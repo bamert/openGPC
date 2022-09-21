@@ -4,8 +4,10 @@ project(openGPC CXX)
 # Use C++11 features.
 set (REQ_CPP11_FEATURES  cxx_strong_enums cxx_auto_type)
 
-set(CMAKE_CXX_STANDARD 11) # C++11...
+set(CMAKE_CXX_STANDARD 11) # C++11.
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_BUILD_TYPE "release")
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON) 
 
 find_package(Eigen3 REQUIRED)
 include_directories(${EIGEN3_INCLUDE_DIR})
