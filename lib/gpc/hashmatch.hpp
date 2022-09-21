@@ -35,7 +35,7 @@
 #include <vector>
 #include <chrono>
 #include <algorithm>
-#include "gpc/buffer.hpp" //needed for definition of Descriptor
+#include "gpc/buffer.hpp"  //needed for definition of Descriptor
 
 using namespace std;
 
@@ -45,13 +45,13 @@ namespace ndb {
  *
  * @tparam     T     Type of list elements
  */
-template<class T>
+template <class T>
 struct ListElement {
-  T val;
-  ListElement<T>* next;
-  ListElement() { next = NULL;}
+    T val;
+    ListElement<T>* next;
+    ListElement() { next = NULL; }
 
-  ListElement(T& v): val(v) {}
+    ListElement(T& v) : val(v) {}
 };
 
 /**
@@ -59,216 +59,204 @@ struct ListElement {
  *
  * @tparam     T     type items in linked list
  */
-template<class T>
+template <class T>
 class OrderedLinkedList {
- private:
-  //Let each linked list have a single lock for insertion
-  int m_size;
-  ListElement<T>* root;
- public:
-  OrderedLinkedList() {
-    //initialize to zero size
-    m_size = 0;
-    root = NULL;
-  }
-  /**
-   * @brief      Destroys the object.
-   *            No destructor required. parent class (hash matcher frees memory)
-   */
-  ~OrderedLinkedList() {
+private:
+    // Let each linked list have a single lock for insertion
+    int m_size;
+    ListElement<T>* root;
 
-  }
+public:
+    OrderedLinkedList() {
+        // initialize to zero size
+        m_size = 0;
+        root = NULL;
+    }
+    /**
+     * @brief      Destroys the object.
+     *            No destructor required. parent class (hash matcher frees memory)
+     */
+    ~OrderedLinkedList() {}
 
-  /**
-   * @brief      Ordererd insert
-   *
-   * @param      ptr   The pointer to our insert location for any new element.
-   *                   This points to the contiguous area within HashTable
-   * @param      val   The value to be inserted
-   *
-   * @return     { description_of_the_return_value }
-   */
-  void insert(ListElement<T>* ptr, T val) {
+    /**
+     * @brief      Ordererd insert
+     *
+     * @param      ptr   The pointer to our insert location for any new element.
+     *                   This points to the contiguous area within HashTable
+     * @param      val   The value to be inserted
+     *
+     * @return     { description_of_the_return_value }
+     */
+    void insert(ListElement<T>* ptr, T val) {
+        int terminateAfter = 10;  // default for now
 
-    int terminateAfter = 10; //default for now
+        int i = 0;
+        // Don't insert if we already have more than the limit of patches in our bucket
+        if (m_size >= terminateAfter) return;
+        if (m_size == 0) {
+            root = ptr;
+            root->val = val;
+            root->next = NULL;
+            m_size++;
+        } else {  // find insertion point
+            ListElement<T>* next;
+            // compile error when i try to do these on one line. wow.
+            ListElement<T>* last = NULL;
 
-    int i = 0;
-    // Don't insert if we already have more than the limit of patches in our bucket
-    if(m_size>=terminateAfter) 
-      return;
-    if (m_size == 0) {
-      root = ptr;
-      root->val = val;
-      root->next = NULL;
-      m_size++;
-    } else { //find insertion point
-      ListElement<T>* next;
-      // compile error when i try to do these on one line. wow.
-      ListElement<T>* last = NULL;
+            next = root;
+            while (next && next->val <= val && i < terminateAfter) {
+                i++;
+                last = next;
+                next = next->next;
+            }
+            // If we already have terminateAfter elements in this list,
+            // don't try to insert anymore.
+            if (i >= terminateAfter) return;
 
-      next = root;
-      while (next && next->val <= val && i < terminateAfter) {
-        i++;
-        last = next;
-        next = next->next;
-      }
-      // If we already have terminateAfter elements in this list,
-      // don't try to insert anymore.
-      if (i >= terminateAfter )
-        return;
+            if (last != NULL) {
+                // Insert behind 'next'(=after last) will insert at correct position.
+                insertAfter(ptr, last, val);
+            } else {
+                // We are about to replace root element
+                ptr->val = val;
+                ptr->next = root;
+                root = ptr;
+            }
+            m_size++;
+        }
+    }
 
-      if (last != NULL) {
-        // Insert behind 'next'(=after last) will insert at correct position.
-        insertAfter(ptr, last, val);
-      } else {
-        // We are about to replace root element
+    /**
+     * @brief      Insert after element pointed at by elem
+     *
+     * @param      ptr   The storage location in contiguous memory
+     * @param      elem  The element we are inserting after
+     * @param      val   The value
+     */
+    void insertAfter(ListElement<T>* ptr, ListElement<T>* elem, T& val) {
+        // Point new elem to (former) next elem
+        ptr->next = elem->next;
         ptr->val = val;
-        ptr->next = root;
-        root = ptr;
-      }
-      m_size++;
+        // Attach to previous element
+        elem->next = ptr;
     }
-  }
 
-  /**
-   * @brief      Insert after element pointed at by elem
-   *
-   * @param      ptr   The storage location in contiguous memory
-   * @param      elem  The element we are inserting after
-   * @param      val   The value
-   */
-  void insertAfter(ListElement<T>* ptr, ListElement<T>* elem, T& val) {
-    // Point new elem to (former) next elem
-    ptr->next = elem->next;
-    ptr->val = val;
-    // Attach to previous element
-    elem->next = ptr;
-  }
-
-  /**
-   * @brief      Prints the entire list in order
-   */
-  void print() {
-    ListElement<T>* next;
-    next = root;
-    while (next) {
-      cout << next->val << ",";
-      next = next->next;
+    /**
+     * @brief      Prints the entire list in order
+     */
+    void print() {
+        ListElement<T>* next;
+        next = root;
+        while (next) {
+            cout << next->val << ",";
+            next = next->next;
+        }
     }
-  }
-  /**
-   * @brief      Gets pairs of same data in list
-   */
-  void getDuplicates(std::vector<std::pair<T, T>>& v) {
-    ListElement<T>* next;
-    ListElement<T>* prev;
-    next = root;
-    while (next) {
-      prev = next;
-      next = next->next;
-
-      // Add values that are present exactly twice
-      if (next != NULL && prev->val == next->val) {
-        if (prev->val.diffImgs(next->val)) {
-         // if theres a third element, check that too
-          if (next->next != NULL) { 
-            // third element is not equal
-            if (next->next->val != next->val)
-              v.push_back(std::make_pair(prev->val, next->val));
-            //If we just checked the last triplet, leave.
-            if (next->next->next == NULL) 
-              return;
-          } else { //no third same element. we have a pair
-            v.push_back(std::make_pair(prev->val, next->val));
-            //corr.push_back(ndb::Support(srcStates[i].point.x, srcStates[i].point.y, srcStates[i].point.x - tarStates[i].point.x))
-          }
-        } else {
-          //if there a third element, check if it has different image type.
-          //This is to avoid cases such as 
-          //10s10s10s10t11t, where 10s10t would be falsily classified as a match.
-          if (next->next != NULL && next->val.diffImgs(next->next->val)) {
-            //skip over false pair
+    /**
+     * @brief      Gets pairs of same data in list
+     */
+    void getDuplicates(std::vector<std::pair<T, T>>& v) {
+        ListElement<T>* next;
+        ListElement<T>* prev;
+        next = root;
+        while (next) {
             prev = next;
             next = next->next;
-          }
-        }
-      }
-    }
-  }
-  /**
-   * @brief      { function_description }
-   *
-   * @return     { description_of_the_return_value }
-   */
-  int size() {
-    return m_size;
-  }
-  bool empty() {
-    return m_size == 0 ? true : false;
-  }
-};
 
+            // Add values that are present exactly twice
+            if (next != NULL && prev->val == next->val) {
+                if (prev->val.diffImgs(next->val)) {
+                    // if theres a third element, check that too
+                    if (next->next != NULL) {
+                        // third element is not equal
+                        if (next->next->val != next->val)
+                            v.push_back(std::make_pair(prev->val, next->val));
+                        // If we just checked the last triplet, leave.
+                        if (next->next->next == NULL) return;
+                    } else {  // no third same element. we have a pair
+                        v.push_back(std::make_pair(prev->val, next->val));
+                        // corr.push_back(ndb::Support(srcStates[i].point.x,
+                        // srcStates[i].point.y, srcStates[i].point.x -
+                        // tarStates[i].point.x))
+                    }
+                } else {
+                    // if there a third element, check if it has different image type.
+                    // This is to avoid cases such as
+                    // 10s10s10s10t11t, where 10s10t would be falsily classified as a
+                    // match.
+                    if (next->next != NULL && next->val.diffImgs(next->next->val)) {
+                        // skip over false pair
+                        prev = next;
+                        next = next->next;
+                    }
+                }
+            }
+        }
+    }
+    /**
+     * @brief      { function_description }
+     *
+     * @return     { description_of_the_return_value }
+     */
+    int size() { return m_size; }
+    bool empty() { return m_size == 0 ? true : false; }
+};
 
 /**
  * @brief      Class for hashmatch.
  *
  * @tparam     T    unique pairs of type T are matched using hash table
  */
-template<class T>
+template <class T>
 class Hashmatch {
+private:
+    std::vector<OrderedLinkedList<T>> index;
+    // Number buckets in hash table
+    int m_indexSize = 0;
+    int m_maxElements = 0;
+    // keeps data for manual memory management
+    ListElement<T>* buffer = NULL;
+    int insertIndex = 0;
 
- private:
-  std::vector<OrderedLinkedList<T>> index;
-  // Number buckets in hash table
-  int m_indexSize = 0;
-  int m_maxElements = 0;
-  // keeps data for manual memory management
-  ListElement<T>* buffer = NULL;
-  int insertIndex = 0;
- public:
-
-  /**
-   * @brief      Consructs hashmatch internal structures.
-   *
-   * @param[in]  indexSize    The number of rows(buckets) of the hash table
-   * @param[in]  maxElements  The maximum number of elements that will be inserted
-   */
-  Hashmatch(int indexSize, int maxElements) { //number of table index entries
-    // this preferably be the next larger prime from size
-    index.resize(indexSize); 
-    m_indexSize = indexSize;
-    m_maxElements = maxElements;
-    // Pre-allocate continous memory region.
-    buffer = new ListElement<T>[maxElements];
-    clear();
-  }
-  ~Hashmatch() {
-    delete[] buffer;
-  }
-  void clear() {
-    for (int i = 0; i < m_maxElements; i++)
-      buffer[i].next = NULL;
-  }
-  void insert(T val) {
-    //Compute hash (use proper hashfunction here for future release)
-    int hash = val % m_indexSize; 
-    index[hash].insert(&buffer[insertIndex++], val);
-  }
-
-  void getDuplicates(std::vector<std::pair<T, T>>& v) {
-    for (int i = 0; i < index.size(); i++) {
-      if (!index[i].empty())
-        index[i].getDuplicates(v);
+public:
+    /**
+     * @brief      Consructs hashmatch internal structures.
+     *
+     * @param[in]  indexSize    The number of rows(buckets) of the hash table
+     * @param[in]  maxElements  The maximum number of elements that will be inserted
+     */
+    Hashmatch(int indexSize, int maxElements) {  // number of table index entries
+        // this preferably be the next larger prime from size
+        index.resize(indexSize);
+        m_indexSize = indexSize;
+        m_maxElements = maxElements;
+        // Pre-allocate continous memory region.
+        buffer = new ListElement<T>[maxElements];
+        clear();
     }
-  }
-  void printFirstNonEmpty() {
-    for (int i = 0; i < index.size(); i++) {
-      if (!index[i].empty()) {
-        index[i].print();
-        return;
-      }
+    ~Hashmatch() { delete[] buffer; }
+    void clear() {
+        for (int i = 0; i < m_maxElements; i++) buffer[i].next = NULL;
     }
-  }
+    void insert(T val) {
+        // Compute hash (use proper hashfunction here for future release)
+        int hash = val % m_indexSize;
+        index[hash].insert(&buffer[insertIndex++], val);
+    }
+
+    void getDuplicates(std::vector<std::pair<T, T>>& v) {
+        for (int i = 0; i < index.size(); i++) {
+            if (!index[i].empty()) index[i].getDuplicates(v);
+        }
+    }
+    void printFirstNonEmpty() {
+        for (int i = 0; i < index.size(); i++) {
+            if (!index[i].empty()) {
+                index[i].print();
+                return;
+            }
+        }
+    }
 };
-}//end ndb
+}  // namespace ndb
 #endif

@@ -44,7 +44,7 @@
 #include <Eigen/Dense>
 #include <thread>
 
-//GPC includes
+// GPC includes
 #include "gpc/buffer.hpp"
 #include "gpc/hashmatch.hpp"
 #include "gpc/filter.hpp"
@@ -55,28 +55,29 @@
 
 namespace gpc {
 namespace training {
-struct ForestSettings{
-   enum FernType {Zero, Tau};
-   FernType fernType;
-   std::string getFernTypeName() {
-   if(fernType == FernType::Zero)
-      return "zero";
-    else
-      return "tau";
-   }
-   double sampleFraction;
-   std::vector<gpc::training::Fern> ferns;
-   ForestSettings(std::vector<gpc::training::Fern> ferns, double sampleFraction) :
-     ferns(ferns), sampleFraction(sampleFraction) {}
-
+struct ForestSettings {
+    enum FernType { Zero, Tau };
+    FernType fernType;
+    std::string getFernTypeName() {
+        if (fernType == FernType::Zero)
+            return "zero";
+        else
+            return "tau";
+    }
+    double sampleFraction;
+    std::vector<gpc::training::Fern> ferns;
+    ForestSettings(std::vector<gpc::training::Fern> ferns, double sampleFraction)
+        : ferns(ferns), sampleFraction(sampleFraction) {}
 };
 std::chrono::high_resolution_clock::time_point sysTick() {
-  return std::chrono::high_resolution_clock::now();
+    return std::chrono::high_resolution_clock::now();
 }
-float tickToMs(std::chrono::high_resolution_clock::time_point t0,
+float tickToMs(
+    std::chrono::high_resolution_clock::time_point t0,
     std::chrono::high_resolution_clock::time_point t1) {
-  return std::abs(1000.*std::chrono::duration_cast<std::chrono::duration<double>>
-      (t1 - t0).count());
+    return std::abs(
+        1000. *
+        std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t0).count());
 }
 /**
  * @brief      An ensemble  of GPC trees
@@ -85,79 +86,87 @@ float tickToMs(std::chrono::high_resolution_clock::time_point t0,
  *                     form a triplet
  */
 class Forest {
- private:
-  // Keeps the type the triplets of the chosen Feature F
-  typedef typename gpc::training::Feature F;
-  typedef typename F::GPCPatchTriplet GPCTriplet_t;
-  typedef typename gpc::training::Fern T;
-  std::mt19937 rng;
-  std::uniform_int_distribution<int> randSample;
- public:
-  Forest() {}
+private:
+    // Keeps the type the triplets of the chosen Feature F
+    typedef typename gpc::training::Feature F;
+    typedef typename F::GPCPatchTriplet GPCTriplet_t;
+    typedef typename gpc::training::Fern T;
+    std::mt19937 rng;
+    std::uniform_int_distribution<int> randSample;
 
-  /**
-   * @brief      Train a forest
-   *
-   * @param      trainingSamples  The training triplets
-   */
-  void trainAndExport(std::vector<GPCTriplet_t>& trainingSamples, 
-      gpc::training::ForestSettings forestSettings,
-      gpc::training::OptimizerSettings optSettings,
-      std::string filename) {
-    std::chrono::high_resolution_clock::time_point t0, t1;
-    std::default_random_engine gen;
-    std::bernoulli_distribution dist(forestSettings.sampleFraction);
-    std::random_device rd2;
-    
-    if(trainingSamples.size() == 0){
-      cout << "ERR: Training set is empty. Aborting." << endl;
-      return;
+public:
+    Forest() {}
+
+    /**
+     * @brief      Train a forest
+     *
+     * @param      trainingSamples  The training triplets
+     */
+    void trainAndExport(
+        std::vector<GPCTriplet_t>& trainingSamples,
+        gpc::training::ForestSettings forestSettings,
+        gpc::training::OptimizerSettings optSettings,
+        std::string filename) {
+        std::chrono::high_resolution_clock::time_point t0, t1;
+        std::default_random_engine gen;
+        std::bernoulli_distribution dist(forestSettings.sampleFraction);
+        std::random_device rd2;
+
+        if (trainingSamples.size() == 0) {
+            cout << "ERR: Training set is empty. Aborting." << endl;
+            return;
+        }
+
+        rng = std::mt19937(rd2());
+        randSample = std::uniform_int_distribution<int>(
+            0, int(forestSettings.sampleFraction * trainingSamples.size()) - 1);
+
+        // Draw random sub samples for each tree
+        int fernIndex = 1;
+        for (auto& fern : forestSettings.ferns) {
+            std::vector<GPCTriplet_t> subSample;
+            // With replacement
+            for (int i = 0;
+                 i < int(forestSettings.sampleFraction * trainingSamples.size()); i++) {
+                subSample.push_back(trainingSamples[randSample(rng)]);
+            }
+
+            // Train on the generated subsample
+            cout << "Fern(" << fernIndex++ << "/" << forestSettings.ferns.size()
+                 << ") num samples:" << subSample.size();
+            cout << endl << std::string(90, '*') << endl;
+            t0 = std::chrono::high_resolution_clock::now();
+            fern.train(subSample, optSettings);
+            t1 = std::chrono::high_resolution_clock::now();
+            cout << "done in "
+                 << std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t0)
+                        .count()
+                 << " s" << endl
+                 << endl;
+        }
+        // Store trained forest to file
+        cout << "Exporting forest" << endl;
+        std::fstream file(filename, std::ofstream::out | std::ofstream::trunc);
+        file << forestSettings.ferns.size() << endl;
+        int f = 0;
+        for (auto& fern : forestSettings.ferns) {
+            // params for each fern
+            std::vector<gpc::training::Feature::params> fparams = fern.getParameters();
+            // std::vector<FernParam> fparams = fern.getParameters();
+            int scale = fern.getScale();  // 2: small, 1: medium, 0: large
+            file << f << " " << ((scale == 2) ? "s" : ((scale == 1) ? "m" : "l")) << " "
+                 << fparams.size() << endl;
+            int i = 0;
+            for (auto& p : fparams) {
+                file << int(i) << " " << int(p.ix) << " " << int(p.iy) << " " << int(p.jx)
+                     << " " << int(p.jy) << " " << int(p.tau) << endl;
+                i++;
+            }
+            f++;
+        }
+        file.close();
     }
-
-    rng = std::mt19937(rd2());
-    randSample = std::uniform_int_distribution<int>
-      (0, int(forestSettings.sampleFraction * trainingSamples.size()) - 1);
-
-    //Draw random sub samples for each tree
-    int fernIndex = 1;
-    for(auto& fern:forestSettings.ferns){
-      std::vector<GPCTriplet_t> subSample;
-      //With replacement
-      for (int i = 0 ; i < int(forestSettings.sampleFraction * trainingSamples.size()); i++) {
-        subSample.push_back(trainingSamples[randSample(rng)]);
-      }
-
-      //Train on the generated subsample
-      cout << "Fern(" << fernIndex++ << "/" << forestSettings.ferns.size() << ") num samples:" <<
-           subSample.size();
-      cout << endl << std::string(90, '*') << endl;
-      t0 = std::chrono::high_resolution_clock::now();
-      fern.train(subSample, optSettings);
-      t1 = std::chrono::high_resolution_clock::now();
-      cout << "done in " << std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t0).count() << " s" << endl <<
-           endl;
-    }
-    //Store trained forest to file
-    cout << "Exporting forest" << endl;
-    std::fstream file(filename, std::ofstream::out | std::ofstream::trunc);
-    file << forestSettings.ferns.size() << endl;
-    int f =0;
-    for(auto& fern : forestSettings.ferns){
-      //params for each fern
-      std::vector<gpc::training::Feature::params> fparams = fern.getParameters();
-      //std::vector<FernParam> fparams = fern.getParameters();
-      int scale = fern.getScale(); //2: small, 1: medium, 0: large
-      file << f << " " << ( (scale == 2 ) ? "s" : ((scale == 1) ? "m" : "l") )<< " " << fparams.size() << endl;
-      int i=0;
-      for(auto& p : fparams){
-        file << int(i) << " " <<  int(p.ix) << " " << int(p.iy) << " " << int(p.jx) << " " << int(p.jy) << " " << int(p.tau) << endl;
-        i++;
-      }
-      f++;
-    }
-    file.close();
-  }
-};//Forest class
-}//training namespace
-}//gpc namespace
+};  // Forest class
+}  // namespace training
+}  // namespace gpc
 #endif
