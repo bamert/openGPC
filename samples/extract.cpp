@@ -11,7 +11,7 @@ int main(int argc, char** argv) {
     sintelPath = argv[1];
     outputFile = argv[2];
   }else{
-    cout << "Usage: " << argv[0] << " <sintel training set root dir path> <extracted dataset path>" << endl;
+    cout<< "Usage: " << argv[0] << " <sintel training set root dir path> <extracted dataset path>" << endl;
     cout << "Trying defaults:" << endl;
     cout << "Sintel dataset location    : " << sintelPath << endl;
     cout << "Export extracted dataset to: " << outputFile << endl;

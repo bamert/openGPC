@@ -1,0 +1,23 @@
+Checks: >
+  bugprone-*,
+  modernize-*,
+  concurrency-*,
+  performance-*,
+  clang-analyzer-core*,
+  clang-analyzer-cplusplus*,
+  -modernize-use-trailing-return-type,
+  -clang-analyzer-security.ArrayBound,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-exception-escape,
+  -bugprone-implicit-widening-of-multiplication-result,
+  -bugprone-narrowing-conversions,
+  -bugprone-reserved-identifier,
+  -bugprone-unchecked-optional-access,
+  -performance-enum-size,
+
+WarningsAsErrors: '*'
+HeaderFilterRegex: '.*'
+FormatStyle: file
+InheritParentConfig: false
+AnalyzeTemporaryDtors: false
+

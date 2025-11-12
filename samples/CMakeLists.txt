@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.4)
+cmake_minimum_required(VERSION 3.6)
 
 project(openGPC CXX)
 # Use C++11 features.
