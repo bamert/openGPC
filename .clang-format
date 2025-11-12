@@ -4,3 +4,4 @@ BinPackParameters: false
 DerivePointerAlignment: false
 IncludeBlocks: Regroup
 SortIncludes: true
+NamespaceIndentation: None

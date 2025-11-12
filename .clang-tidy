@@ -14,10 +14,7 @@ Checks: >
   -bugprone-reserved-identifier,
   -bugprone-unchecked-optional-access,
   -performance-enum-size,
-
 WarningsAsErrors: '*'
 HeaderFilterRegex: '.*'
 FormatStyle: file
 InheritParentConfig: false
-AnalyzeTemporaryDtors: false
-
