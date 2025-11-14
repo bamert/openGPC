@@ -31,9 +31,8 @@ TEST(Approval, Inference)
                                    // <100K descriptors
 
     // Load images
-    if (simg.readPNG(leftImgPath) || timg.readPNG(rightImgPath)) {
-        throw std::runtime_error("Image load failed");
-    }
+    simg.readPNG(leftImgPath);
+    timg.readPNG(rightImgPath); 
     // Get learned filter for the given image dimensions.
     GPCForest_t::FilterMask fm =
         forest.readForest(forestPath, simg.cols(), simg.rows());

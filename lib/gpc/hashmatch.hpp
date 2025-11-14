@@ -103,7 +103,6 @@ class OrderedLinkedList {
             m_size++;
         } else {  // find insertion point
             ListElement<T>* next;
-            // compile error when i try to do these on one line. wow.
             ListElement<T>* last = NULL;
 
             next = root;

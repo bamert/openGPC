@@ -61,7 +61,6 @@ class SintelStereo {
    private:
     typedef typename gpc::training::Feature F;
     typedef typename F::GPCPatchTriplet GPCTriplet_t;
-    bool canDoExtraction = false;
     /**
      * @brief Checks dataset location sanity.
      *        Not tested on windows
@@ -102,9 +101,12 @@ class SintelStereo {
 
         // count images in first scene
         numFrames = countImages();
-        canDoExtraction = true;
+        if (numFrames == 0) {
+            throw std::runtime_error(
+                "0 images found at specified dataset path");
+        }
     }
-    SintelStereo() { canDoExtraction = false; }
+    SintelStereo() {}
     /**
      * @brief extract training dataset made up of triplets (reference, positive,
      * negative) image patches.
@@ -119,18 +121,9 @@ class SintelStereo {
                                                   int radiusLower,
                                                   int radiusUpper) {
         std::vector<GPCTriplet_t> trainingData;
-        if (canDoExtraction == false) {
-            cout << "ERR: No path for Sintel dataset specified" << endl;
-            return trainingData;
-        }
-        // Verify directory structure for Sintel Stereo dataset
         if (!(isDir(cleanLeftDir) && isDir(cleanRightDir) && isDir(dispDir) &&
               isDir(oclDir) && isDir(oofDir))) {
-            cout << "ERR: This does not look like the Sintel Stereo dataset. "
-                    "Please "
-                    "verify paths."
-                 << endl;
-            return trainingData;
+            throw std::runtime_error("Directory structure invalid. ");
         }
 
         // cycle through scenes
@@ -145,34 +138,25 @@ class SintelStereo {
                 // ndb::Buffer<ndb::RGBColor> disp;
                 ndb::RGBBuffer disp;
                 // Get images and disparity
-                try {
-                    int err = 0;
-                    Eigen::MatrixXd u, v;
-                    err |= getBW(imgId, imgL, imgR);
-                    err |= getDisparity(imgId, disp);
-                    err |= getOcclusion(imgId, occ);
-                    err |= getInvalid(imgId, oof);
-                    if (err)
-                        throw std::invalid_argument(
-                            "could not open dataset file. Verify paths to "
-                            "Sintel dataset "
-                            "are set correctly.");
+                Eigen::MatrixXd u, v;
+                getBW(imgId, imgL, imgR);
+                getDisparity(imgId, disp);
+                getOcclusion(imgId, occ);
+                getInvalid(imgId, oof);
 
-                    // Get Keypoint coordinate lists for given image pair
-                    getGroundTruthMatches(disp,
-                                          oof,
-                                          occ,
-                                          numTripletsPerPair,
-                                          radiusLower,
-                                          radiusUpper,
-                                          kptsL,
-                                          kptsR,
-                                          kptsN);
-                    // Extract features under Feature requested
-                    Feature.extractAllTriplets(
-                        imgL, imgR, kptsL, kptsR, kptsN, trainingData);
-                } catch (const std::invalid_argument& e) {
-                }
+                // Get Keypoint coordinate lists for given image pair
+                getGroundTruthMatches(disp,
+                                      oof,
+                                      occ,
+                                      numTripletsPerPair,
+                                      radiusLower,
+                                      radiusUpper,
+                                      kptsL,
+                                      kptsR,
+                                      kptsN);
+                // Extract features under Feature requested
+                Feature.extractAllTriplets(
+                    imgL, imgR, kptsL, kptsR, kptsN, trainingData);
             }  // image loop
         }  // scene loop
         std::mt19937 rng(12345);
@@ -200,13 +184,10 @@ class SintelStereo {
     std::vector<GPCTriplet_t> loadTrainingData(std::string path) {
         struct stat buffer;
         if (stat(path.c_str(), &buffer) != 0) {
-            std::vector<GPCTriplet_t> emptyset;
-            cout << "ERR: No extracted training set found at given path"
-                 << endl;
-            return emptyset;
-        } else {
-            return Feature.loadAllTriplets(path);
+            throw std::runtime_error(
+                "No extracted training set found at given path");
         }
+        return Feature.loadAllTriplets(path);
     }
 
    private:
@@ -270,8 +251,7 @@ class SintelStereo {
             return cnt;
         } else {
             /* could not open directory */
-            std::cout << "ERR:couldn't open directory" << std::endl;
-            return 0;
+            throw std::runtime_error("couldn't open directory");
         }
     }
 
@@ -282,15 +262,12 @@ class SintelStereo {
      *
      * @return     0 if success
      */
-    int selectScene(std::string sceneName) {
+    void selectScene(std::string sceneName) {
         if (std::find(sceneNames.begin(), sceneNames.end(), sceneName) !=
             sceneNames.end()) {
             selectedScene = sceneName;
-            return 0;
         } else {
-            std::cout << "ERR:Scene with name (" << sceneName
-                      << ") was not found" << std::endl;
-            return 1;
+            throw std::runtime_error("Scene " + sceneName + " was not found");
         }
     }
 
@@ -317,12 +294,10 @@ class SintelStereo {
      * @param      L     Left image
      * @param      R     Right image
      *
-     * @return     The bw.
      */
-    int getBW(int id, ndb::Buffer<uint8_t>& L, ndb::Buffer<uint8_t>& R) {
-        int err1 = L.readPNG(makeFramePath(cleanLeftDir, selectedScene, id));
-        int err2 = R.readPNG(makeFramePath(cleanRightDir, selectedScene, id));
-        return err1 | err2;
+    void getBW(int id, ndb::Buffer<uint8_t>& L, ndb::Buffer<uint8_t>& R) {
+        L.readPNG(makeFramePath(cleanLeftDir, selectedScene, id));
+        R.readPNG(makeFramePath(cleanRightDir, selectedScene, id));
     }
 
     /**
@@ -332,12 +307,10 @@ class SintelStereo {
      * @param      L     Left image
      * @param      R     Right image
      *
-     * @return     The rgb.
      */
-    int getRGB(int id, ndb::Buffer<uint8_t>& L, ndb::Buffer<uint8_t>& R) {
-        int err1 = L.readPNG(makeFramePath(cleanLeftDir, selectedScene, id));
-        int err2 = R.readPNG(makeFramePath(cleanRightDir, selectedScene, id));
-        return err1 | err2;
+    void getRGB(int id, ndb::Buffer<uint8_t>& L, ndb::Buffer<uint8_t>& R) {
+        L.readPNG(makeFramePath(cleanLeftDir, selectedScene, id));
+        R.readPNG(makeFramePath(cleanRightDir, selectedScene, id));
     }
 
     /**
@@ -346,10 +319,9 @@ class SintelStereo {
      * @param[in]  id    The image id
      * @param      O     occlusion image
      *
-     * @return     0 if succecss.
      */
-    int getOcclusion(int id, ndb::Buffer<uint8_t>& O) {
-        return O.readPNG(makeFramePath(oclDir, selectedScene, id));
+    void getOcclusion(int id, ndb::Buffer<uint8_t>& O) {
+        O.readPNG(makeFramePath(oclDir, selectedScene, id));
     }
     /**
      * @brief      Gets the disparity map
@@ -357,10 +329,9 @@ class SintelStereo {
      * @param[in]  id    The image id
      * @param      D     disparity image
      *
-     * @return     0 if success.
      */
-    int getDisparity(int id, ndb::RGBBuffer& D) {
-        return D.readPNGRGB(makeFramePath(dispDir, selectedScene, id));
+    void getDisparity(int id, ndb::RGBBuffer& D) {
+        D.readPNGRGB(makeFramePath(dispDir, selectedScene, id));
     }
 
     /**
@@ -369,10 +340,9 @@ class SintelStereo {
      * @param[in]  id    The image id
      * @param      I     Invalid pixel map
      *
-     * @return     0 if success
      */
-    int getInvalid(int id, ndb::Buffer<uint8_t>& I) {
-        return I.readPNG(makeFramePath(oofDir, selectedScene, id));
+    void getInvalid(int id, ndb::Buffer<uint8_t>& I) {
+        I.readPNG(makeFramePath(oofDir, selectedScene, id));
     }
 
     /**
