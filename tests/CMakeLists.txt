@@ -9,7 +9,6 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(approvaltests)
 
-enable_testing()
 
 find_package(GTest REQUIRED)
 add_executable(test_single_matching test_single_matching.cpp)

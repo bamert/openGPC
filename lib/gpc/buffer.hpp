@@ -89,26 +89,21 @@ struct Support {
     Support(int x, int y, float d) : x(x), y(y), d(d) {}
     Support(int x, int y) : x(x), y(y), d(0.) {}
     Support() {};
-    
 };
-inline bool operator<(const Support& a, const Support& b)
-{
+inline bool operator<(const Support& a, const Support& b) {
     if (a.x != b.x) return a.x < b.x;
     if (a.y != b.y) return a.y < b.y;
     return a.d < b.d;
 }
-inline std::ostream& operator<<(std::ostream& os, const Support& s)
-    {
-        return os << "(" << s.x << ", " << s.y << ", " << s.d << ")";
-    }
+inline std::ostream& operator<<(std::ostream& os, const Support& s) {
+    return os << "(" << s.x << ", " << s.y << ", " << s.d << ")";
+}
 template <typename T>
-inline std::ostream& operator<<(std::ostream& os, const std::vector<T>& v)
-{
+inline std::ostream& operator<<(std::ostream& os, const std::vector<T>& v) {
     os << "[";
     for (size_t i = 0; i < v.size(); ++i) {
         os << v[i];
-        if (i + 1 < v.size())
-            os << ", ";
+        if (i + 1 < v.size()) os << ", ";
     }
     os << "]";
     return os;

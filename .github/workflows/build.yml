@@ -20,8 +20,11 @@ jobs:
         sudo apt-get install -y libeigen3-dev libpng-dev
 
     - name: Configure
-      run: cd samples && mkdir build && cd build && cmake ..
+      run: mkdir build && cd build && cmake ..
 
     - name: Build
-      run: cd samples/build && make -j
+      run: cd build && make -j
+
+    - name: Test
+      run: cd build && ctest --output-on-failure
 
