@@ -17,7 +17,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y libeigen3-dev libpng-dev
+        sudo apt-get install -y libeigen3-dev libpng-dev libgtest-dev
 
     - name: Configure
       run: mkdir build && cd build && cmake ..
