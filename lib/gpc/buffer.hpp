@@ -81,7 +81,6 @@ struct Descriptor {
     bool operator<=(const Descriptor& d) const { return state <= d.state; }
     int operator%(const int& d) const { return state % d; }
 };
-
 // Keeps support points with associated disparity
 // Support points are only used in the left image
 struct Support {
@@ -90,7 +89,30 @@ struct Support {
     Support(int x, int y, float d) : x(x), y(y), d(d) {}
     Support(int x, int y) : x(x), y(y), d(0.) {}
     Support() {};
+    
 };
+inline bool operator<(const Support& a, const Support& b)
+{
+    if (a.x != b.x) return a.x < b.x;
+    if (a.y != b.y) return a.y < b.y;
+    return a.d < b.d;
+}
+inline std::ostream& operator<<(std::ostream& os, const Support& s)
+    {
+        return os << "(" << s.x << ", " << s.y << ", " << s.d << ")";
+    }
+template <typename T>
+inline std::ostream& operator<<(std::ostream& os, const std::vector<T>& v)
+{
+    os << "[";
+    for (size_t i = 0; i < v.size(); ++i) {
+        os << v[i];
+        if (i + 1 < v.size())
+            os << ", ";
+    }
+    os << "]";
+    return os;
+}
 // Keeps correspondences in case of non-epipolar matching scenario
 struct Correspondence {
     Point srcPt, tarPt;

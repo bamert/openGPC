@@ -6,5 +6,8 @@ doc
 data/MPI-Sintel*
 data/kitti
 data/*.bin
-samples/build
+build
+.cache
+.cache
+
 
