@@ -41,6 +41,7 @@
 #include <gpc/buffer.hpp>
 #include <iostream>
 #include <iterator>
+#include <gpc/filter.hpp>
 #include <random>
 #include <set>
 #include <string>
