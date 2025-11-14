@@ -1,3 +1,4 @@
+IndentWidth: 4
 BasedOnStyle: Google
 BinPackArguments: false
 BinPackParameters: false
