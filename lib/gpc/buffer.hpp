@@ -205,7 +205,7 @@ class __attribute__((aligned(32), packed)) Buffer
     // original sources provided by Guillaume Cottenceau under the X11 license
     // from http://zarb.org/~gc/html/libpng.html
 
-    int readPNG(std::string filename) {
+    void readPNG(std::string filename) {
         unsigned char header[8];  // 8 is the maximum size that can be checked
         png_byte colorType;
         png_byte bitDepth;
@@ -217,34 +217,29 @@ class __attribute__((aligned(32), packed)) Buffer
         // open file and test for it being a png
         FILE* fp = fopen(filename.c_str(), "rb");
         if (!fp) {
-            cout << "ERR: File" << filename
-                 << " could not be opened for reading" << endl;
-            return 1;
+            throw std::runtime_error("File " + filename +
+                                     " could not be opened for reading");
         }
         size_t res = fread(header, 1, 8, fp);
         if (png_sig_cmp(header, 0, 8)) {
-            cout << "ERR: File" << filename
-                 << " is not recognized as a PNG file" << endl;
-            return 1;
+            throw std::runtime_error(
+                "File " + filename + " is not recognized as a PNG file");
         }
         // initialize stuff
         pngPtr =
             png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 
         if (!pngPtr) {
-            cout << "ERR: png_create_read_struct failed" << endl;
-            return 1;
+            throw std::runtime_error("png_create_read_struct failed");
         }
 
         infoPtr = png_create_info_struct(pngPtr);
         if (!infoPtr) {
-            cout << "ERR: png_create_info_struct failed" << endl;
-            return 1;
+            throw std::runtime_error("png_create_info_struct failed");
         }
 
         if (setjmp(png_jmpbuf(pngPtr))) {
-            cout << "ERR: Error during init_io" << endl;
-            return 1;
+            throw std::runtime_error("Error during init_io");
         }
 
         png_init_io(pngPtr, fp);
@@ -266,8 +261,8 @@ class __attribute__((aligned(32), packed)) Buffer
 
         // read file
         if (setjmp(png_jmpbuf(pngPtr))) {
-            cout << "ERR: Error during read_image" << endl;
-            return 1;
+            throw std::runtime_error(
+                "Read error");
         }
 
         rowPointers = (png_bytep*)malloc(sizeof(png_bytep) * height);
@@ -327,16 +322,10 @@ class __attribute__((aligned(32), packed)) Buffer
         // boundary
         Base::conservativeResize(this->height, ALIGN16(this->width));
         if (nChannels == 0 || nChannels == 4) {
-            cout << "ERR: found something other than gray or 3 channel color "
-                    "image("
-                 << int(png_get_color_type(pngPtr, infoPtr)) << ") aborting!"
-                 << endl;
-
-            return 1;
+            throw std::runtime_error("ERR: found channel number != {1,3}");
         }
         for (int y = 0; y < this->height; y++) free(rowPointers[y]);
         free(rowPointers);
-        return 0;
     }
     void writePNG(std::string filename) {
         png_byte colorType = PNG_COLOR_TYPE_GRAY;

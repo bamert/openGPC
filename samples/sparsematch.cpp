@@ -42,10 +42,9 @@ int main(int argc, char** argv) {
                                    // <100K descriptors
 
     // Load images
-    if (simg.readPNG(leftImgPath) || timg.readPNG(rightImgPath)) {
-        cout << "No image data \n";
-        return -1;
-    }
+    simg.readPNG(leftImgPath);
+    timg.readPNG(rightImgPath);
+
     // Get learned filter for the given image dimensions.
     GPCForest_t::FilterMask fm =
         forest.readForest(forestPath, simg.cols(), simg.rows());

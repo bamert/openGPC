@@ -145,18 +145,11 @@ class SintelStereo {
                 // ndb::Buffer<ndb::RGBColor> disp;
                 ndb::RGBBuffer disp;
                 // Get images and disparity
-                try {
-                    int err = 0;
                     Eigen::MatrixXd u, v;
-                    err |= getBW(imgId, imgL, imgR);
-                    err |= getDisparity(imgId, disp);
-                    err |= getOcclusion(imgId, occ);
-                    err |= getInvalid(imgId, oof);
-                    if (err)
-                        throw std::invalid_argument(
-                            "could not open dataset file. Verify paths to "
-                            "Sintel dataset "
-                            "are set correctly.");
+                    getBW(imgId, imgL, imgR);
+                    getDisparity(imgId, disp);
+                    getOcclusion(imgId, occ);
+                    getInvalid(imgId, oof);
 
                     // Get Keypoint coordinate lists for given image pair
                     getGroundTruthMatches(disp,
@@ -171,8 +164,6 @@ class SintelStereo {
                     // Extract features under Feature requested
                     Feature.extractAllTriplets(
                         imgL, imgR, kptsL, kptsR, kptsN, trainingData);
-                } catch (const std::invalid_argument& e) {
-                }
             }  // image loop
         }  // scene loop
         std::mt19937 rng(12345);
@@ -317,12 +308,10 @@ class SintelStereo {
      * @param      L     Left image
      * @param      R     Right image
      *
-     * @return     The bw.
      */
-    int getBW(int id, ndb::Buffer<uint8_t>& L, ndb::Buffer<uint8_t>& R) {
-        int err1 = L.readPNG(makeFramePath(cleanLeftDir, selectedScene, id));
-        int err2 = R.readPNG(makeFramePath(cleanRightDir, selectedScene, id));
-        return err1 | err2;
+    void getBW(int id, ndb::Buffer<uint8_t>& L, ndb::Buffer<uint8_t>& R) {
+        L.readPNG(makeFramePath(cleanLeftDir, selectedScene, id));
+        R.readPNG(makeFramePath(cleanRightDir, selectedScene, id));
     }
 
     /**
@@ -332,12 +321,10 @@ class SintelStereo {
      * @param      L     Left image
      * @param      R     Right image
      *
-     * @return     The rgb.
      */
-    int getRGB(int id, ndb::Buffer<uint8_t>& L, ndb::Buffer<uint8_t>& R) {
-        int err1 = L.readPNG(makeFramePath(cleanLeftDir, selectedScene, id));
-        int err2 = R.readPNG(makeFramePath(cleanRightDir, selectedScene, id));
-        return err1 | err2;
+    void getRGB(int id, ndb::Buffer<uint8_t>& L, ndb::Buffer<uint8_t>& R) {
+        L.readPNG(makeFramePath(cleanLeftDir, selectedScene, id));
+        R.readPNG(makeFramePath(cleanRightDir, selectedScene, id));
     }
 
     /**
@@ -346,10 +333,9 @@ class SintelStereo {
      * @param[in]  id    The image id
      * @param      O     occlusion image
      *
-     * @return     0 if succecss.
      */
-    int getOcclusion(int id, ndb::Buffer<uint8_t>& O) {
-        return O.readPNG(makeFramePath(oclDir, selectedScene, id));
+    void getOcclusion(int id, ndb::Buffer<uint8_t>& O) {
+        O.readPNG(makeFramePath(oclDir, selectedScene, id));
     }
     /**
      * @brief      Gets the disparity map
@@ -357,10 +343,9 @@ class SintelStereo {
      * @param[in]  id    The image id
      * @param      D     disparity image
      *
-     * @return     0 if success.
      */
-    int getDisparity(int id, ndb::RGBBuffer& D) {
-        return D.readPNGRGB(makeFramePath(dispDir, selectedScene, id));
+    void getDisparity(int id, ndb::RGBBuffer& D) {
+        D.readPNGRGB(makeFramePath(dispDir, selectedScene, id));
     }
 
     /**
@@ -369,10 +354,9 @@ class SintelStereo {
      * @param[in]  id    The image id
      * @param      I     Invalid pixel map
      *
-     * @return     0 if success
      */
-    int getInvalid(int id, ndb::Buffer<uint8_t>& I) {
-        return I.readPNG(makeFramePath(oofDir, selectedScene, id));
+    void getInvalid(int id, ndb::Buffer<uint8_t>& I) {
+        I.readPNG(makeFramePath(oofDir, selectedScene, id));
     }
 
     /**

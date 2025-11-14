@@ -150,39 +150,29 @@ class SintelOpticalFlow {
                 // Keep the necessary images
                 ndb::Buffer<uint8_t> oSrc, oTar, invSrc, invTar, imgL, imgR;
                 // Get images and disparity
-                try {
-                    int err = 0;
-                    Eigen::MatrixXd u, v;
-                    err |= getFlow(imgId, u, v);
-                    err |= getBW(imgId, imgL, imgR);
-                    err |= getOcclusion(imgId, oSrc);
-                    err |= getOcclusion(imgId + 1, oTar);
-                    err |= getInvalid(imgId, invSrc);
-                    err |= getInvalid(imgId + 1, invTar);
-                    if (err)
-                        throw std::invalid_argument(
-                            "could not open dataset file. Verify paths to "
-                            "Sintel dataset "
-                            "are set correctly.");
-
-                    // Get Keypoint coordinate lists for given image pair
-                    getGroundTruthMatches(u,
-                                          v,
-                                          oSrc,
-                                          oTar,
-                                          invSrc,
-                                          invTar,
-                                          numTripletsPerPair,
-                                          radiusLower,
-                                          radiusUpper,
-                                          kptsL,
-                                          kptsR,
-                                          kptsN);
-                    // Extract features under Feature requested
-                    Feature.extractAllTriplets(
-                        imgL, imgR, kptsL, kptsR, kptsN, trainingData);
-                } catch (const std::invalid_argument& e) {
-                }
+                Eigen::MatrixXd u, v;
+                getFlow(imgId, u, v);
+                getBW(imgId, imgL, imgR);
+                getOcclusion(imgId, oSrc);
+                getOcclusion(imgId + 1, oTar);
+                getInvalid(imgId, invSrc);
+                getInvalid(imgId + 1, invTar);
+                // Get Keypoint coordinate lists for given image pair
+                getGroundTruthMatches(u,
+                                      v,
+                                      oSrc,
+                                      oTar,
+                                      invSrc,
+                                      invTar,
+                                      numTripletsPerPair,
+                                      radiusLower,
+                                      radiusUpper,
+                                      kptsL,
+                                      kptsR,
+                                      kptsN);
+                // Extract features under Feature requested
+                Feature.extractAllTriplets(
+                    imgL, imgR, kptsL, kptsR, kptsN, trainingData);
             }  // image loop
         }  // scene loop
 
@@ -375,12 +365,10 @@ class SintelOpticalFlow {
      * @param      L     left image
      * @param      R     right image
      *
-     * @return     The bw.
      */
-    int getBW(int id, ndb::Buffer<uint8_t>& L, ndb::Buffer<uint8_t>& R) {
-        int err1 = L.readPNG(makeFramePath(cleanDir, selectedScene, id));
-        int err2 = R.readPNG(makeFramePath(cleanDir, selectedScene, id + 1));
-        return err1 | err2;
+    void getBW(int id, ndb::Buffer<uint8_t>& L, ndb::Buffer<uint8_t>& R) {
+        L.readPNG(makeFramePath(cleanDir, selectedScene, id));
+        R.readPNG(makeFramePath(cleanDir, selectedScene, id + 1));
     }
 
     /**
@@ -390,12 +378,10 @@ class SintelOpticalFlow {
      * @param      L     left image
      * @param      R     right image
      *
-     * @return     0 if success
      */
-    int getRGB(int id, ndb::Buffer<uint8_t>& L, ndb::Buffer<uint8_t>& R) {
-        int err1 = L.readPNG(makeFramePath(cleanDir, selectedScene, id));
-        int err2 = R.readPNG(makeFramePath(cleanDir, selectedScene, id + 1));
-        return err1 | err2;
+    void getRGB(int id, ndb::Buffer<uint8_t>& L, ndb::Buffer<uint8_t>& R) {
+        L.readPNG(makeFramePath(cleanDir, selectedScene, id));
+        R.readPNG(makeFramePath(cleanDir, selectedScene, id + 1));
     }
 
     /**
@@ -407,7 +393,7 @@ class SintelOpticalFlow {
      *
      * @return     0 if success
      */
-    int getFlow(int id, Eigen::MatrixXd& uMat, Eigen::MatrixXd& vMat) {
+    void getFlow(int id, Eigen::MatrixXd& uMat, Eigen::MatrixXd& vMat) {
         std::ostringstream os;
         os << std::setw(4) << std::setfill('0') << id;
         std::string filename =
@@ -422,8 +408,7 @@ class SintelOpticalFlow {
         uint8_t* fileptr = buf;
         size_t res = fread(buf, sizeof(uint8_t), length, readFile);
         if (res != length) {
-            cout << "Read error" << endl;
-            return 1;
+            throw std::runtime_error("Could not read flow file");
         }
         fclose(readFile);
 
@@ -440,7 +425,9 @@ class SintelOpticalFlow {
         uMat.resize(width, height);
         vMat.resize(width, height);
 
-        if (tag != 202021.25) cout << "TAG not found" << endl;
+        if (tag != 202021.25) {
+            throw std::runtime_error("Invalid .flo file (tag not found)");
+        }
         // Read in flow data
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
@@ -454,7 +441,6 @@ class SintelOpticalFlow {
             }
         }
         delete[] fileptr;
-        return 0;
     }
     /**
      * @brief      Gets the occlusion map
@@ -462,10 +448,9 @@ class SintelOpticalFlow {
      * @param[in]  id    The image id
      * @param      O     image the occlusion map
      *
-     * @return     0 if success.
      */
-    int getOcclusion(int id, ndb::Buffer<uint8_t>& O) {
-        return O.readPNG(makeFramePath(oclDir, selectedScene, id));
+    void getOcclusion(int id, ndb::Buffer<uint8_t>& O) {
+        O.readPNG(makeFramePath(oclDir, selectedScene, id));
     }
     /**
      * @brief      Gets the invalid pixel map (out of frame)
@@ -475,8 +460,8 @@ class SintelOpticalFlow {
      *
      * @return     The invalid.
      */
-    int getInvalid(int id, ndb::Buffer<uint8_t>& I) {
-        return I.readPNG(makeFramePath(invDir, selectedScene, id));
+    void getInvalid(int id, ndb::Buffer<uint8_t>& I) {
+        I.readPNG(makeFramePath(invDir, selectedScene, id));
     }
 
     /**
