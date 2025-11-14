@@ -64,7 +64,6 @@ class SintelOpticalFlow {
    private:
     typedef typename gpc::training::Feature F;
     typedef typename F::GPCPatchTriplet GPCTriplet_t;
-    bool canDoExtraction = false;
 
     /**
      * @brief Checks dataset location sanity.
@@ -107,9 +106,12 @@ class SintelOpticalFlow {
 
         // count images in first scene
         numFrames = countImages();
-        canDoExtraction = true;
+        if (numFrames == 0) {
+            throw std::runtime_error(
+                "0 images found at specified dataset path");
+        }
     }
-    SintelOpticalFlow() { canDoExtraction = false; }
+    SintelOpticalFlow() {}
     /**
      * @brief Extract training dataset made up of triplets (reference, positive,
      * negative) image patches.
@@ -125,20 +127,12 @@ class SintelOpticalFlow {
     std::vector<GPCTriplet_t> extractTrainingData(int numTripletsPerPair,
                                                   int radiusLower,
                                                   int radiusUpper) {
-        std::vector<GPCTriplet_t> trainingData;
-        if (canDoExtraction == false) {
-            cout << "ERR: No path for Sintel dataset specified" << endl;
-            return trainingData;
-        }
         // Verify directory structure for Sintel Optical Flow  dataset
         if (!(isDir(cleanDir) && isDir(finalDir) && isDir(flowDir) &&
               isDir(oclDir) && isDir(invDir))) {
-            cout << "ERR: This does not look like the Sintel Optical Flow "
-                    "dataset. "
-                    "Please verify paths."
-                 << endl;
-            return trainingData;
+            throw std::runtime_error("Directory structure invalid. ");
         }
+        std::vector<GPCTriplet_t> trainingData;
 
         // cycle through scenes
         for (int sceneId = 0; sceneId < 20; sceneId++) {
@@ -202,13 +196,10 @@ class SintelOpticalFlow {
     std::vector<GPCTriplet_t> loadTrainingData(std::string path) {
         struct stat buffer;
         if (stat(path.c_str(), &buffer) != 0) {
-            std::vector<GPCTriplet_t> emptyset;
-            cout << "ERR: No extracted training set found at given path"
-                 << endl;
-            return emptyset;
-        } else {
-            return Feature.loadAllTriplets(path);
+            throw std::runtime_error(
+                "No extracted training set found at given path");
         }
+        return Feature.loadAllTriplets(path);
     }
 
    private:
@@ -320,7 +311,7 @@ class SintelOpticalFlow {
             return cnt;
         } else {
             /* could not open directory */
-            std::cout << "ERR:couldn't open directory" << std::endl;
+            throw std::runtime_error("couldn't open directory");
             return 0;
         }
     }
@@ -337,8 +328,7 @@ class SintelOpticalFlow {
             sceneNames.end()) {
             selectedScene = sceneName;
         } else {
-            std::cout << "ERR:Scene with name (" << sceneName
-                      << ") was not found" << std::endl;
+            throw std::runtime_error("Scene " + sceneName + " was not found");
         }
     }
 
