@@ -39,9 +39,9 @@
 #include <cmath>  //for log2
 #include <fstream>
 #include <gpc/buffer.hpp>
+#include <gpc/filter.hpp>
 #include <iostream>
 #include <iterator>
-#include <gpc/filter.hpp>
 #include <random>
 #include <set>
 #include <string>
