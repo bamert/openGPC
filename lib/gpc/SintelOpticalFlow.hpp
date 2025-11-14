@@ -37,6 +37,7 @@
 #include <Eigen/Dense>
 #include <algorithm>
 #include <cstring>
+#include <filesystem>
 #include <iostream>
 #include <random>
 #include <string>
@@ -79,6 +80,19 @@ class SintelOpticalFlow {
             return true;
         else
             return false;
+    }
+
+    static std::string makeFramePath(const std::filesystem::path& baseDir,
+                                     const std::string& scene,
+                                     int idx) {
+        std::ostringstream os;
+        os << std::setw(4) << std::setfill('0') << idx;
+
+        // <base>/<scene>/frame_XXXX.png
+        std::filesystem::path p =
+            baseDir / scene / ("frame_" + os.str() + ".png");
+
+        return p.string();
     }
 
    public:
@@ -173,7 +187,8 @@ class SintelOpticalFlow {
         }  // scene loop
 
         // Random shuffle the data
-        std::random_shuffle(trainingData.begin(), trainingData.end());
+        std::mt19937 rng(12345);
+        std::shuffle(trainingData.begin(), trainingData.end(), rng);
         return trainingData;
     }
 
@@ -363,15 +378,8 @@ class SintelOpticalFlow {
      * @return     The bw.
      */
     int getBW(int id, ndb::Buffer<uint8_t>& L, ndb::Buffer<uint8_t>& R) {
-        char buf[16];
-
-        sprintf(buf, "%04d", id);
-        int err1 = L.readPNG(cleanDir + "/" + selectedScene + "/frame_" + buf +
-                             ".png");
-        sprintf(buf, "%04d", id + 1);
-        int err2 = R.readPNG(cleanDir + "/" + selectedScene + "/frame_" + buf +
-                             ".png");
-
+        int err1 = L.readPNG(makeFramePath(cleanDir, selectedScene, id));
+        int err2 = R.readPNG(makeFramePath(cleanDir, selectedScene, id + 1));
         return err1 | err2;
     }
 
@@ -385,14 +393,8 @@ class SintelOpticalFlow {
      * @return     0 if success
      */
     int getRGB(int id, ndb::Buffer<uint8_t>& L, ndb::Buffer<uint8_t>& R) {
-        char buf[16];
-        sprintf(buf, "%04d", id);
-        int err1 = L.readPNG(cleanDir + "/" + selectedScene + "/frame_" + buf +
-                             ".png");
-        sprintf(buf, "%04d", id + 1);
-        int err2 = R.readPNG(cleanDir + "/" + selectedScene + "/frame_" + buf +
-                             ".png");
-
+        int err1 = L.readPNG(makeFramePath(cleanDir, selectedScene, id));
+        int err2 = R.readPNG(makeFramePath(cleanDir, selectedScene, id + 1));
         return err1 | err2;
     }
 
@@ -406,10 +408,10 @@ class SintelOpticalFlow {
      * @return     0 if success
      */
     int getFlow(int id, Eigen::MatrixXd& uMat, Eigen::MatrixXd& vMat) {
-        char tbuf[16];
-        sprintf(tbuf, "%04d", id);
-        string filename =
-            flowDir + "/" + selectedScene + "/frame_" + tbuf + ".flo";
+        std::ostringstream os;
+        os << std::setw(4) << std::setfill('0') << id;
+        std::string filename =
+            (flowDir + "/" + selectedScene + "/frame_" + os.str() + ".flo");
 
         // Read file into buffer
         FILE* readFile = fopen(filename.c_str(), "rb");
@@ -463,10 +465,7 @@ class SintelOpticalFlow {
      * @return     0 if success.
      */
     int getOcclusion(int id, ndb::Buffer<uint8_t>& O) {
-        char buf[16];
-        sprintf(buf, "%04d", id);
-        return O.readPNG(oclDir + "/" + selectedScene + "/frame_" + buf +
-                         ".png");
+        return O.readPNG(makeFramePath(oclDir, selectedScene, id));
     }
     /**
      * @brief      Gets the invalid pixel map (out of frame)
@@ -477,10 +476,7 @@ class SintelOpticalFlow {
      * @return     The invalid.
      */
     int getInvalid(int id, ndb::Buffer<uint8_t>& I) {
-        char buf[16];
-        sprintf(buf, "%04d", id);
-        return I.readPNG(invDir + "/" + selectedScene + "/frame_" + buf +
-                         ".png");
+        return I.readPNG(makeFramePath(invDir, selectedScene, id));
     }
 
     /**

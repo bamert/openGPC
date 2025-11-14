@@ -77,6 +77,18 @@ class SintelStereo {
         else
             return false;
     }
+    static std::string makeFramePath(const std::filesystem::path& baseDir,
+                                     const std::string& scene,
+                                     int idx) {
+        std::ostringstream os;
+        os << std::setw(4) << std::setfill('0') << idx;
+
+        // <base>/<scene>/frame_XXXX.png
+        std::filesystem::path p =
+            baseDir / scene / ("frame_" + os.str() + ".png");
+
+        return p.string();
+    }
 
    public:
     SintelStereo(std::string basePath) {
@@ -163,7 +175,8 @@ class SintelStereo {
                 }
             }  // image loop
         }  // scene loop
-        std::random_shuffle(trainingData.begin(), trainingData.end());
+        std::mt19937 rng(12345);
+        std::shuffle(trainingData.begin(), trainingData.end(), rng);
         return trainingData;
     }
 
@@ -307,14 +320,8 @@ class SintelStereo {
      * @return     The bw.
      */
     int getBW(int id, ndb::Buffer<uint8_t>& L, ndb::Buffer<uint8_t>& R) {
-        char buf[16];
-
-        sprintf(buf, "%04d", id);
-        int err1 = L.readPNG(cleanLeftDir + "/" + selectedScene + "/frame_" +
-                             buf + ".png");
-        int err2 = R.readPNG(cleanRightDir + "/" + selectedScene + "/frame_" +
-                             buf + ".png");
-
+        int err1 = L.readPNG(makeFramePath(cleanLeftDir, selectedScene, id));
+        int err2 = R.readPNG(makeFramePath(cleanRightDir, selectedScene, id));
         return err1 | err2;
     }
 
@@ -328,13 +335,8 @@ class SintelStereo {
      * @return     The rgb.
      */
     int getRGB(int id, ndb::Buffer<uint8_t>& L, ndb::Buffer<uint8_t>& R) {
-        char buf[16];
-        sprintf(buf, "%04d", id);
-        int err1 = L.readPNG(cleanLeftDir + "/" + selectedScene + "/frame_" +
-                             buf + ".png");
-        int err2 = R.readPNG(cleanRightDir + "/" + selectedScene + "/frame_" +
-                             buf + ".png");
-
+        int err1 = L.readPNG(makeFramePath(cleanLeftDir, selectedScene, id));
+        int err2 = R.readPNG(makeFramePath(cleanRightDir, selectedScene, id));
         return err1 | err2;
     }
 
@@ -347,10 +349,7 @@ class SintelStereo {
      * @return     0 if succecss.
      */
     int getOcclusion(int id, ndb::Buffer<uint8_t>& O) {
-        char buf[16];
-        sprintf(buf, "%04d", id);
-        return O.readPNG(oclDir + "/" + selectedScene + "/frame_" + buf +
-                         ".png");
+        return O.readPNG(makeFramePath(oclDir, selectedScene, id));
     }
     /**
      * @brief      Gets the disparity map
@@ -361,10 +360,7 @@ class SintelStereo {
      * @return     0 if success.
      */
     int getDisparity(int id, ndb::RGBBuffer& D) {
-        char buf[16];
-        sprintf(buf, "%04d", id);
-        return D.readPNGRGB(dispDir + "/" + selectedScene + "/frame_" + buf +
-                            ".png");
+        return D.readPNGRGB(makeFramePath(dispDir, selectedScene, id));
     }
 
     /**
@@ -376,10 +372,7 @@ class SintelStereo {
      * @return     0 if success
      */
     int getInvalid(int id, ndb::Buffer<uint8_t>& I) {
-        char buf[16];
-        sprintf(buf, "%04d", id);
-        return I.readPNG(oofDir + "/" + selectedScene + "/frame_" + buf +
-                         ".png");
+        return I.readPNG(makeFramePath(oofDir, selectedScene, id));
     }
 
     /**

@@ -4,7 +4,7 @@ include(CheckCXXSourceRuns)
 project(openGPC CXX)
 set (REQ_CPP11_FEATURES  cxx_strong_enums cxx_auto_type)
 
-set(CMAKE_CXX_STANDARD 11) 
+set(CMAKE_CXX_STANDARD 17) 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
