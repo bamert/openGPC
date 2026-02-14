@@ -12,7 +12,7 @@ FetchContent_MakeAvailable(approvaltests)
 
 find_package(GTest REQUIRED)
 add_executable(test_single_matching test_single_matching.cpp)
-target_link_libraries(test_single_matching PRIVATE ${PNG_LIBRARIES} ApprovalTests::ApprovalTests GTest::gtest_main)
+target_link_libraries(test_single_matching PRIVATE ${PNG_LIBRARIES} ApprovalTests::ApprovalTests GTest::gtest_main Eigen3::Eigen)
 
 add_test(NAME single_matching COMMAND test_single_matching)
 
