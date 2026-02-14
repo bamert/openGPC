@@ -896,7 +896,7 @@ class RGBBuffer : public Buffer<RGBColor> {
         free(rowPointers);
     }
 };
-Buffer<RGBColor> getDisparityVisualization(
+inline Buffer<RGBColor> getDisparityVisualization(
     ndb::Buffer<uint8_t>& srcImg,
     std::vector<int>& validEstimateIndices,
     ndb::Buffer<float>& disparity) {
@@ -969,7 +969,7 @@ Buffer<RGBColor> getDisparityVisualization(
     }
     return dispVis;
 }
-Buffer<RGBColor> getDisparityVisualization(ndb::Buffer<uint8_t>& srcImg,
+inline Buffer<RGBColor> getDisparityVisualization(ndb::Buffer<uint8_t>& srcImg,
                                            std::vector<Support>& support) {
     float min_disparity = 0;
     float max_disparity = 128;

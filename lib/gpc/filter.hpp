@@ -58,7 +58,7 @@ namespace ndb {
  * @param ind output array (indices into n of nonzero elements)
  * @param m   number of elements in output
  */
-__attribute__((noinline)) void arr2ind(const unsigned char* a,
+inline void arr2ind(const unsigned char* a,
                                        int n,
                                        int* ind,
                                        int* m) {
@@ -132,7 +132,7 @@ void pack16to8(const __m128i x0, const __m128i x1, __m128i& y) {
  * @param end      end of the range
  * @param nThreads number of threads to use
  */
-void parFor(std::function<void(int, int)> const& f,
+inline void parFor(std::function<void(int, int)> const& f,
             int start,
             int end,
             int nThreads) {
@@ -165,7 +165,7 @@ void parFor(std::function<void(int, int)> const& f,
  * @param[in]  numThreads number of threads to use
  * @param      threshold  threshold to binarize sobel filter output
  */
-void sobelNaive(
+inline void sobelNaive(
     uint8_t* in, uint8_t* gradient, int width, int height, uint8_t threshold) {
     assert(width % 16 == 0 && "width must be multiple of 16!");
     int thresholdSq = threshold * threshold;
@@ -217,7 +217,7 @@ void sobelNaive(
  * @param[in]  height   The height
  * @param[in]  numThreads number of threads to use
  */
-void boxNaive(uint8_t* in, uint8_t* blurred, int width, int height) {
+inline void boxNaive(uint8_t* in, uint8_t* blurred, int width, int height) {
     assert(width % 16 == 0 && "width must be multiple of 16!");
     // allocate space for result
     uint8_t* ptr = in;
@@ -269,7 +269,7 @@ void boxNaive(uint8_t* in, uint8_t* blurred, int width, int height) {
  * @param width     The width of the image at pointer *in
  * @param height    The height of the image at pointer *in
  */
-void gpcFilterNaive(uint8_t* in,
+inline void gpcFilterNaive(uint8_t* in,
                     const uint8_t* grad,
                     uint32_t* gpc,
                     std::vector<int32_t> fastmask,
@@ -303,7 +303,7 @@ void gpcFilterNaive(uint8_t* in,
  * @param width     The width of the image at pointer *in
  * @param height    The height of the image at pointer *in
  */
-void gpcFilterTauNaive(uint8_t* in,
+inline void gpcFilterTauNaive(uint8_t* in,
                        const uint8_t* grad,
                        uint32_t* gpc,
                        std::vector<int32_t> fastmask,
@@ -336,7 +336,7 @@ void gpcFilterTauNaive(uint8_t* in,
    * @param[in]  height   The height
    * @param[in]  numThreads number of threads to use
    */
-void box(uint8_t* in, uint8_t* blurred, int width, int height, int numThreads) {
+inline void box(uint8_t* in, uint8_t* blurred, int width, int height, int numThreads) {
     assert(width % 16 == 0 && "width must be multiple of 16!");
 #ifndef _INTRINSICS_SSE
     boxNaive(in, blurred, width, height);
@@ -464,7 +464,7 @@ void box(uint8_t* in, uint8_t* blurred, int width, int height, int numThreads) {
  * @param[in]  numThreads number of threads to use
  */
 
-void sobel(uint8_t* in,
+inline void sobel(uint8_t* in,
            uint8_t* blurred,
            int width,
            int height,
@@ -645,7 +645,7 @@ inline bool isAllZeros(__m128i xmm) {
  * @param height    The height of the image at pointer *in
  * @param numThreadsNumber of threads to use
  */
-void gpcFilter(uint8_t* in,
+inline void gpcFilter(uint8_t* in,
                const uint8_t* grad,
                uint32_t* gpc,
                std::vector<int32_t> fastmask,
@@ -731,7 +731,7 @@ void gpcFilter(uint8_t* in,
  * @param height    The height of the image at pointer *in
  * @param numThreads Number of threads to use
  */
-void gpcFilterTau(uint8_t* in,
+inline void gpcFilterTau(uint8_t* in,
                   const uint8_t* grad,
                   uint32_t* gpc,
                   std::vector<int32_t> fastmask,
@@ -816,7 +816,7 @@ void gpcFilterTau(uint8_t* in,
  * @param width   Width of the image at *in pointer
  * @param height  Heiht of the image at *in pointer
  */
-void census5x5Naive(uint8_t* in, uint32_t* census, int width, int height) {
+inline void census5x5Naive(uint8_t* in, uint32_t* census, int width, int height) {
     uint32_t val;
     uint32_t* dst;
     for (int y = 2; y < height - 3; y++) {
@@ -850,7 +850,7 @@ void census5x5Naive(uint8_t* in, uint32_t* census, int width, int height) {
  * @param width
  * @param height
  */
-void census5x5(uint8_t* in, uint32_t* census, int width, int height) {
+inline void census5x5(uint8_t* in, uint32_t* census, int width, int height) {
     assert(width % 16 == 0 && "width must be multiple of 16!");
 #ifndef _INTRINSICS_SSE
     census5x5Naive(in, census, width, height);

@@ -37,6 +37,16 @@ if(SSE)
     endif()
 endif()
 
+add_library(gpc_core 
+    lib/gpc/forest.cpp 
+)
+target_link_libraries(gpc_core 
+    PUBLIC 
+        Eigen3::Eigen 
+        ${PNG_LIBRARIES} 
+        Threads::Threads
+)
+target_include_directories(gpc_core PUBLIC lib)
 enable_testing()
 add_subdirectory(samples)
 add_subdirectory(tests)

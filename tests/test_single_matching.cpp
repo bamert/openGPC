@@ -1,7 +1,7 @@
 #define APPROVALS_GOOGLETEST
 #include <ApprovalTests.hpp>     
 #include <gtest/gtest.h>
-#include "gpc/inference.hpp"
+#include "gpc/forest.hpp"
 
 
 TEST(Approval, Inference)
@@ -34,12 +34,12 @@ TEST(Approval, Inference)
     simg.readPNG(leftImgPath);
     timg.readPNG(rightImgPath); 
     // Get learned filter for the given image dimensions.
-    GPCForest_t::FilterMask fm =
+    gpc::inference::FilterMask fm =
         forest.readForest(forestPath, simg.cols(), simg.rows());
 
-    GPCForest_t::PreprocessedImage simgP =
+    gpc::inference::PreprocessedImage simgP =
         forest.preprocessImage(simg, inferencesettings);
-    GPCForest_t::PreprocessedImage timgP =
+    gpc::inference::PreprocessedImage timgP =
         forest.preprocessImage(timg, inferencesettings);
 
     // Match rectified stereo images

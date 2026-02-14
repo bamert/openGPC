@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "gpc/inference.hpp"
+#include "gpc/forest.hpp"
 using namespace std;
 int main(int argc, char** argv) {
     std::string forestPath = "../../forests/defaultZeroForest.txt";
@@ -46,15 +46,15 @@ int main(int argc, char** argv) {
     timg.readPNG(rightImgPath);
 
     // Get learned filter for the given image dimensions.
-    GPCForest_t::FilterMask fm =
+    gpc::inference::FilterMask fm =
         forest.readForest(forestPath, simg.cols(), simg.rows());
 
     // Preprocess images (box filter, sobel filter, indices of high gradient
     // pixels)
     gpc::inference::time_point t0 = gpc::inference::sysTick();
-    GPCForest_t::PreprocessedImage simgP =
+    gpc::inference::PreprocessedImage simgP =
         forest.preprocessImage(simg, inferencesettings);
-    GPCForest_t::PreprocessedImage timgP =
+    gpc::inference::PreprocessedImage timgP =
         forest.preprocessImage(timg, inferencesettings);
     gpc::inference::time_point t1 = gpc::inference::sysTick();
 
@@ -66,7 +66,7 @@ int main(int argc, char** argv) {
          << ", #candidatesL:" << simgP.mask.size()
          << ", #candidatesR:" << timgP.mask.size()
          << ", tMatch: " << gpc::inference::tickToMs(t2, t1) << " ms"
-         << ", num matches:" << supp.size() << endl;
+         << ", num matches:" << supp.size() << std::endl;
 
     // Output sparse disparities overlayed on left input image
     ndb::Buffer<ndb::RGBColor> renderDisp;
