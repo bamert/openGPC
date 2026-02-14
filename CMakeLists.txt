@@ -40,6 +40,7 @@ endif()
 add_library(gpc_core 
     lib/gpc/forest.cpp 
     lib/gpc/fern.cpp 
+    lib/gpc/feature.cpp 
 )
 target_link_libraries(gpc_core 
     PUBLIC 
