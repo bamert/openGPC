@@ -28,8 +28,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //
 // Code Author: Niklaus Bamert (bamertn@ethz.ch)
-#ifndef __NDB__FILTER
-#define __NDB__FILTER
+#ifndef __NDB__KERNEL_UTILS
+#define __NDB__KERNEL_UTILS
 
 #include <cassert>
 #include <thread>
@@ -102,103 +102,5 @@ void parFor(std::function<void(int, int)> const& f,
             int end,
             int nThreads);
 
-/**
- * @brief Applies a gpc filter defined by the pixel-difference tests in
- * fastmask. Naive implementation
- *
- * @param in        The input image.
- * @param grad      The gradient image, such that we can skip non-gradient
- * pixels
- * @param gpc       The output image of 32bit codes
- * @param fastmask  The fastmask containing the gpc filter
- * @param idx       The gradient indices. Only used if no intrincs are available
- *                  and the call gets forwarded to the naive implementation.
- * @param width     The width of the image at pointer *in
- * @param height    The height of the image at pointer *in
- */
-void gpcFilterNaive(uint8_t* in,
-                    const uint8_t* grad,
-                    uint32_t* gpc,
-                    std::vector<int32_t> fastmask,
-                    std::vector<int>& idx,
-                    int width,
-                    int height);
-
-/**
- * @brief Applies a gpc filter defined by the pixel-difference tests in
- * fastmask. Additionally uses a threshold vector (tau) Naive implementation.
- *
- * @param in        The input image.
- * @param grad      The gradient image, such that we can skip non-gradient
- * pixels
- * @param gpc       The output image of 32bit codes
- * @param fastmask  The fastmask containing the gpc filter
- * @param width     The width of the image at pointer *in
- * @param height    The height of the image at pointer *in
- */
-void gpcFilterTauNaive(uint8_t* in,
-                       const uint8_t* grad,
-                       uint32_t* gpc,
-                       std::vector<int32_t> fastmask,
-                       std::vector<int> tau,
-                       std::vector<int>& idx,
-                       int width,
-                       int height);
-/**
- * @brief Checks if the 128bits in xmm are all zero
- *
- * @param xmm
- *
- * @return true if all zeros, false otherwise
- */
-#ifdef _INTRINSICS_SSE
-bool isAllZeros(__m128i xmm);
-#endif
-/**
- * @brief Applies a gpc filter defined by the pixel-difference tests in
- * fastmask. Accelerated with SSE.
- *
- * @param in        The input image.
- * @param grad      The gradient image, such that we can skip non-gradient
- * pixels
- * @param gpc       The output image of 32bit codes
- * @param fastmask  The fastmask containing the gpc filter
- * @param idx       The gradient indices. Only used if no intrincs are available
- *                  and the call gets forwarded to the naive implementation.
- * @param width     The width of the image at pointer *in
- * @param height    The height of the image at pointer *in
- * @param numThreadsNumber of threads to use
- */
-void gpcFilter(uint8_t* in,
-               const uint8_t* grad,
-               uint32_t* gpc,
-               std::vector<int32_t> fastmask,
-               std::vector<int>& idx,
-               int width,
-               int height,
-               int numThreads);
-
-/**
- * @brief Applies a gpc filter defined by the pixel-difference tests in
- * fastmask. Additionally uses a threshold vector (tau)
- *
- * @param in        The input image.
- * @param grad      The gradient image, such that we can skip non-gradient
- * pixels
- * @param gpc       The output image of 32bit codes
- * @param fastmask  The fastmask containing the gpc filter
- * @param width     The width of the image at pointer *in
- * @param height    The height of the image at pointer *in
- * @param numThreads Number of threads to use
- */
-void gpcFilterTau(uint8_t* in,
-                  const uint8_t* grad,
-                  uint32_t* gpc,
-                  std::vector<int32_t> fastmask,
-                  std::vector<int> tau,
-                  std::vector<int>& idx,
-                  int width,
-                  int height,
-                  int numThreads); 
 }  // namespace ndb
 #endif

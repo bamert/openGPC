@@ -48,7 +48,6 @@
 #include "gpc/SintelOpticalFlow.hpp"
 #include "gpc/SintelStereo.hpp"
 #include "gpc/buffer.hpp"
-#include "gpc/filter.hpp"
 #include "gpc/hashmatch.hpp"
 
 /**

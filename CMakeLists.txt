@@ -41,10 +41,11 @@ add_library(gpc_core
     lib/gpc/forest.cpp 
     lib/gpc/fern.cpp 
     lib/gpc/feature.cpp 
-    lib/gpc/filter.cpp
     lib/gpc/kernels/sobel.cpp
     lib/gpc/kernels/box.cpp
     lib/gpc/kernels/census.cpp
+    lib/gpc/kernels/gpc.cpp
+    lib/gpc/kernels/utils.cpp
 )
 target_link_libraries(gpc_core 
     PUBLIC 

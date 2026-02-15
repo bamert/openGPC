@@ -28,86 +28,9 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //
 // Code Author: Niklaus Bamert (bamertn@ethz.ch)
-#ifndef __NDB__FILTER
-#define __NDB__FILTER
 
-#include <cassert>
-#include <thread>
-
-#include "gpc/filter.hpp"
-using namespace std;
-
+#include "gpc/kernels/gpc.hpp"
 namespace ndb {
-void arr2ind(const unsigned char* a,
-                                       int n,
-                                       int* ind,
-                                       int* m) {
-#ifdef _INTRINSICS_SSE
-    int i, m0, k;
-    __m256i msk;
-    m0 = 0;
-    for (i = 0; i < n; i = i + 32) { /* Load 32 bytes and compare with zero: */
-        msk = _mm256_cmpeq_epi8(_mm256_load_si256((__m256i*)&a[i]),
-                                _mm256_setzero_si256());
-        k = _mm256_movemask_epi8(msk);
-        k = ~k; /* Search for nonzero bits instead of zero bits.  */
-        while (k) {
-            ind[m0] =
-                i + _tzcnt_u32(
-                        k); /* Count the number of trailing zero bits in k. */
-            m0++;
-            k = _blsr_u32(k); /* Clear the lowest set bit in k. */
-        }
-    }
-    *m = m0;
-#else
-    int nnz = 0;
-    for (int i = 0; i < n; i++) {
-        if (a[i] != 0) {
-            nnz++;
-            *ind = i;
-            ind++;
-        }
-    }
-    *m = nnz;
-#endif
-}
-#ifdef _INTRINSICS_SSE
-void unpack8to16(const __m128i x, __m128i& y0, __m128i& y1) {
-    __m128i zero = _mm_setzero_si128();
-    y0 = _mm_unpacklo_epi8(x, zero);
-    y1 = _mm_unpackhi_epi8(x, zero);
-}
-void pack16to8(const __m128i x0, const __m128i x1, __m128i& y) {
-    y = _mm_packus_epi16(x0, x1);
-}
-
-#endif
-void parFor(std::function<void(int, int)> const& f,
-            int start,
-            int end,
-            int nThreads) {
-    // Range definition
-    // quantities derived from range
-    int segSize = (end - start) / nThreads;
-    int lastSeg = (end - start) % nThreads;
-
-    std::vector<std::thread> threads;
-    threads.reserve(nThreads);
-
-    // Spawn threads
-    for (int t = 0; t < nThreads - 1; t++) {
-        threads.emplace_back(f, start + t * segSize, start + (t + 1) * segSize);
-    }
-    threads.emplace_back(f,
-                         start + (nThreads - 1) * segSize,
-                         start + (nThreads)*segSize + lastSeg);
-    // Join
-    for (auto& t : threads) t.join();
-}
-
-
-
 void gpcFilterNaive(uint8_t* in,
                     const uint8_t* grad,
                     uint32_t* gpc,
@@ -312,6 +235,5 @@ void gpcFilterTau(uint8_t* in,
         parFor(gpcFilterSegment, 13, height - 15, 4);
 #endif
 }
+}
 
-}  // namespace ndb
-#endif
