@@ -29,40 +29,33 @@
 //
 // Code Author: Niklaus Bamert (bamertn@ethz.ch)
 
-#ifndef __NDB__KERNEL_SOBEL
-#define __NDB__KERNEL_SOBEL
+#ifndef __NDB__KERNEL_CENSUS
+#define __NDB__KERNEL_CENSUS
+
 #include "gpc/buffer.hpp"
 
 namespace ndb {
 /**
- * @brief Naive 3x3 sobel filter implementation
+ * @brief Naive version of 5x5 census transoform
  *
- * @param      in       input image
- * @param      blurred  The blurred output image
- * @param[in]  width    The width
- * @param[in]  height   The height
- * @param[in]  numThreads number of threads to use
- * @param      threshold  threshold to binarize sobel filter output
+ * @param in      Input image
+ * @param census  32bit census transform output
+ * @param width   Width of the image at *in pointer
+ * @param height  Heiht of the image at *in pointer
  */
-void sobelNaive(
-    uint8_t* in, uint8_t* gradient, int width, int height, uint8_t threshold);
+void census5x5Naive(uint8_t* in, uint32_t* census, int width, int height);
+
 
 /**
- * @brief      3x3 Sobel filter. Input dimension must be multiple of 16
+ * @brief 5x5 dense census transform of input image. binary codes are returned
+ * as a 32bit image
  *
- * @param      in         { parameter_description }
- * @param      blurred    The blurred
- * @param[in]  width      The width
- * @param[in]  height     The height
- * @param[in]  threshold  The threshold
- * @param[in]  numThreads number of threads to use
+ * @param in
+ * @param census
+ * @param width
+ * @param height
  */
+void census5x5(uint8_t* in, uint32_t* census, int width, int height);
 
-void sobel(uint8_t* in,
-           uint8_t* blurred,
-           int width,
-           int height,
-           uint8_t threshold,
-           int numThreads);
 }
 #endif

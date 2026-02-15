@@ -200,26 +200,5 @@ void gpcFilterTau(uint8_t* in,
                   int width,
                   int height,
                   int numThreads); 
-/**
- * @brief Naive version of 5x5 census transoform
- *
- * @param in      Input image
- * @param census  32bit census transform output
- * @param width   Width of the image at *in pointer
- * @param height  Heiht of the image at *in pointer
- */
-void census5x5Naive(uint8_t* in, uint32_t* census, int width, int height);
-
-
-/**
- * @brief 5x5 dense census transform of input image. binary codes are returned
- * as a 32bit image
- *
- * @param in
- * @param census
- * @param width
- * @param height
- */
-void census5x5(uint8_t* in, uint32_t* census, int width, int height);
 }  // namespace ndb
 #endif

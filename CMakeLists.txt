@@ -44,6 +44,7 @@ add_library(gpc_core
     lib/gpc/filter.cpp
     lib/gpc/kernels/sobel.cpp
     lib/gpc/kernels/box.cpp
+    lib/gpc/kernels/census.cpp
 )
 target_link_libraries(gpc_core 
     PUBLIC 
