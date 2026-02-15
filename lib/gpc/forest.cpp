@@ -47,6 +47,7 @@
 #include "gpc/SintelStereo.hpp"
 #include "gpc/buffer.hpp"
 #include "gpc/filter.hpp"
+#include "gpc/kernels/sobel.hpp"
 #include "gpc/hashmatch.hpp"
 #include "gpc/forest.hpp"
 
