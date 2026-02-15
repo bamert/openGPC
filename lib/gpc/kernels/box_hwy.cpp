@@ -1,10 +1,5 @@
-
-// We define the target BEFORE including highway.h
-// On Mac, this forces Highway to use NEON mode without the inclusion loop.
 #define HWY_TARGET HWY_NEON 
 #include <hwy/highway.h>
-
-// We skip foreach_target.h entirely to avoid the "redefinition" and "path" errors.
 
 HWY_BEFORE_NAMESPACE(); 
 namespace ndb {
@@ -138,8 +133,6 @@ HWY_AFTER_NAMESPACE();
 namespace ndb {
 namespace testing {
     void box_hwy(uint8_t* in, uint8_t* blurred, int width, int height) {
-        // We call ghwthe NEON version directly. 
-        // Highway maps HWY_NAMESPACE to N_NEON because of our #define above.
         ndb::N_NEON::BoxKernel(in, blurred, width, height);
     }
 }

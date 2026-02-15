@@ -174,5 +174,4 @@ void box(uint8_t* in, uint8_t* blurred, int width, int height, int numThreads) {
     #endif
 #endif
 }
-
 }  // namespace ndb
