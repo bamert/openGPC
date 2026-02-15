@@ -32,7 +32,7 @@ int main(int argc, char** argv) {
     gpc::inference::InferenceSettings inferencesettings =
         gpc::inference::InferenceSettings()
             .builder()
-            .gradientThreshold(5)
+            .gradientThreshold(20)
             .verticalTolerance(
                 0)               // 0px tolerance for rectified epipolar matches
             .dispHigh(128)       // limit disparities to 128
