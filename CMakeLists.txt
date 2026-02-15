@@ -55,6 +55,7 @@ add_library(gpc_core
     lib/gpc/kernels/census.cpp
     lib/gpc/kernels/gpc.cpp
     lib/gpc/kernels/utils.cpp
+    lib/gpc/kernels/box_hwy.cpp
 )
 target_link_libraries(gpc_core 
     PUBLIC 

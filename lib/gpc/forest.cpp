@@ -212,11 +212,14 @@ PreprocessedImage Forest::preprocessImage(ndb::Buffer<uint8_t>& img,
 
     ndb::Buffer<uint8_t> smooth(img.rows(), img.cols());
     smooth.width = img.width;
+    gpc::inference::time_point t0 = gpc::inference::sysTick();
     ndb::box(img.data(),
              smooth.data(),
              img.cols(),
              img.rows(),
              settings.numThreads_);
+    gpc::inference::time_point t1 = gpc::inference::sysTick();
+    cout << "box: " << gpc::inference::tickToMs(t1, t0) << " ms" << endl;
     smooth.clearBoundary();
     ndb::Buffer<uint8_t> grad(img.rows(), img.cols());
     grad.width = img.width;

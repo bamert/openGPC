@@ -31,6 +31,9 @@
 
 #include "gpc/kernels/box.hpp"
 namespace ndb {
+namespace testing { 
+    void box_hwy(uint8_t* in, uint8_t* blurred, int width, int height); 
+}
 void boxNaive(uint8_t* in, uint8_t* blurred, int width, int height) {
     assert(width % 16 == 0 && "width must be multiple of 16!");
     // allocate space for result
@@ -69,122 +72,107 @@ void boxNaive(uint8_t* in, uint8_t* blurred, int width, int height) {
         }
     }
 }
+#ifdef _INTRINSICS_SSE
+/**
+ * @brief SSE implementation of the 3x3 box filter.
+ * Processed two rows at a time using fixed-point multiplication for division.
+ */
+#include <immintrin.h>
+void boxSSE(uint8_t* in, uint8_t* blurred, int width, int height) {
+    int start = 1;
+    int end = height - 3;
+    
+    int x, y;
+    __m128i one_third = _mm_set1_epi16(21846); // 2^16/3 + 1
+    
+    __m128i *dst0 = (__m128i*)(blurred + width * start);
+    __m128i *dst1 = (__m128i*)(blurred + width * (start + 1));
+
+    for (y = start; y < end; y += 2) {
+        const uint8_t *row0, *row1, *row2, *row3;
+
+        row1 = in + y * width;
+        row0 = row1 - width;
+        row2 = row1 + width;
+        row3 = row2 + width;
+
+        for (x = 0; x < width; x += 16) {
+            __m128i s00, s01, s02;
+            __m128i ra00, ra01, ra02, rb00, rb01, rb02;
+            __m128i a00, a01, a02, b00, b01, b02;
+            __m128i tmp0, tmp1, res;
+
+            // Row 0 Processing
+            s00 = _mm_loadu_si128((__m128i*)(row0 - 1));
+            s01 = _mm_loadu_si128((__m128i*)(row0 + 1));
+            s02 = _mm_load_si128((__m128i*)(row0));
+            unpack8to16(s00, a00, b00);
+            unpack8to16(s01, a01, b01);
+            unpack8to16(s02, a02, b02);
+            ra00 = _mm_mulhi_epi16(_mm_adds_epi16(_mm_adds_epi16(a00, a01), a02), one_third);
+            rb00 = _mm_mulhi_epi16(_mm_adds_epi16(_mm_adds_epi16(b00, b01), b02), one_third);
+
+            // Row 1 Processing
+            s00 = _mm_loadu_si128((__m128i*)(row1 - 1));
+            s01 = _mm_loadu_si128((__m128i*)(row1 + 1));
+            s02 = _mm_load_si128((__m128i*)(row1));
+            unpack8to16(s00, a00, b00);
+            unpack8to16(s01, a01, b01);
+            unpack8to16(s02, a02, b02);
+            ra01 = _mm_mulhi_epi16(_mm_adds_epi16(_mm_adds_epi16(a00, a01), a02), one_third);
+            rb01 = _mm_mulhi_epi16(_mm_adds_epi16(_mm_adds_epi16(b00, b01), b02), one_third);
+
+            // Row 2 Processing
+            s00 = _mm_loadu_si128((__m128i*)(row2 - 1));
+            s01 = _mm_loadu_si128((__m128i*)(row2 + 1));
+            s02 = _mm_load_si128((__m128i*)(row2));
+            unpack8to16(s00, a00, b00);
+            unpack8to16(s01, a01, b01);
+            unpack8to16(s02, a02, b02);
+            ra02 = _mm_mulhi_epi16(_mm_adds_epi16(_mm_adds_epi16(a00, a01), a02), one_third);
+            rb02 = _mm_mulhi_epi16(_mm_adds_epi16(_mm_adds_epi16(b00, b01), b02), one_third);
+
+            // Accumulate rows 0, 1, 2 for dst0
+            tmp0 = _mm_mulhi_epi16(_mm_adds_epi16(_mm_adds_epi16(ra00, ra01), ra02), one_third);
+            tmp1 = _mm_mulhi_epi16(_mm_adds_epi16(_mm_adds_epi16(rb00, rb01), rb02), one_third);
+            pack16to8(tmp0, tmp1, res);
+            _mm_store_si128(dst0++, res);
+
+            // Row 3 Processing
+            s00 = _mm_loadu_si128((__m128i*)(row3 - 1));
+            s01 = _mm_loadu_si128((__m128i*)(row3 + 1));
+            s02 = _mm_load_si128((__m128i*)(row3));
+            unpack8to16(s00, a00, b00);
+            unpack8to16(s01, a01, b01);
+            unpack8to16(s02, a02, b02);
+            ra00 = _mm_mulhi_epi16(_mm_adds_epi16(_mm_adds_epi16(a00, a01), a02), one_third);
+            rb00 = _mm_mulhi_epi16(_mm_adds_epi16(_mm_adds_epi16(b00, b01), b02), one_third);
+
+            // Accumulate rows 1, 2, 3 for dst1
+            tmp0 = _mm_mulhi_epi16(_mm_adds_epi16(_mm_adds_epi16(ra01, ra02), ra00), one_third);
+            tmp1 = _mm_mulhi_epi16(_mm_adds_epi16(_mm_adds_epi16(rb01, rb02), rb00), one_third);
+            pack16to8(tmp0, tmp1, res);
+            _mm_store_si128(dst1++, res);
+
+            row0 += 16; row1 += 16; row2 += 16; row3 += 16;
+        }
+        dst0 += width / 16;
+        dst1 += width / 16;
+    }
+}
+#endif
 void box(uint8_t* in, uint8_t* blurred, int width, int height, int numThreads) {
     assert(width % 16 == 0 && "width must be multiple of 16!");
-#ifndef _INTRINSICS_SSE
-    boxNaive(in, blurred, width, height);
+#if defined(__ARM_NEON) || defined(__aarch64__)
+    // Force use of our new Highway kernel on Mac
+    testing::box_hwy(in, blurred, width, height);
 #else
-    auto boxFilterSegment = [&](int start, int end) {
-        int x, y;
-        __m128i one_third;
-        __m128i *dst0, *dst1;
-        __m128i zero = _mm_setzero_si128();
-
-        one_third = _mm_set1_epi16(
-            21846);  // 2^16/3+1. For 16bit ints. 2^8/3+1=86.33 for 8bit
-        dst0 = (__m128i*)(blurred + width * (start));
-        dst1 = (__m128i*)(blurred + width * (start + 1));
-        for (y = start; y < end;
-             y += 2) {  // We compute results for two rows in one iteration
-            const uint8_t *row0, *row1, *row2, *row3;
-
-            row1 = in + y * width;
-            row0 = row1 - width;
-            row2 = row1 + width;
-            row3 = row2 + width;
-
-            for (x = 0; x < width; x += 16) {
-                __m128i s00, s01, s02;
-                __m128i r00, r01, r02;
-                __m128i ra00, ra01, ra02;
-                __m128i rb00, rb01, rb02;
-
-                __m128i a00, a01, a02, b00, b01, b02;
-
-                __m128i tmp0, tmp1, res;
-
-                s00 = _mm_loadu_si128((__m128i*)(row0 - 1));
-                s01 = _mm_loadu_si128((__m128i*)(row0 + 1));
-                s02 = _mm_load_si128((__m128i*)(row0));
-                unpack8to16(s00, a00, b00);
-                unpack8to16(s01, a01, b01);
-                unpack8to16(s02, a02, b02);
-
-                ra00 = _mm_mulhi_epi16(
-                    _mm_adds_epi16(_mm_adds_epi16(a00, a01), a02), one_third);
-                rb00 = _mm_mulhi_epi16(
-                    _mm_adds_epi16(_mm_adds_epi16(b00, b01), b02), one_third);
-
-                s00 = _mm_loadu_si128((__m128i*)(row1 - 1));
-                s01 = _mm_loadu_si128((__m128i*)(row1 + 1));
-                s02 = _mm_load_si128((__m128i*)(row1));
-                unpack8to16(s00, a00, b00);
-                unpack8to16(s01, a01, b01);
-                unpack8to16(s02, a02, b02);
-
-                ra01 = _mm_mulhi_epi16(
-                    _mm_adds_epi16(_mm_adds_epi16(a00, a01), a02), one_third);
-                rb01 = _mm_mulhi_epi16(
-                    _mm_adds_epi16(_mm_adds_epi16(b00, b01), b02), one_third);
-
-                s00 = _mm_loadu_si128((__m128i*)(row2 - 1));
-                s01 = _mm_loadu_si128((__m128i*)(row2 + 1));
-                s02 = _mm_load_si128((__m128i*)(row2));
-                unpack8to16(s00, a00, b00);
-                unpack8to16(s01, a01, b01);
-                unpack8to16(s02, a02, b02);
-
-                ra02 = _mm_mulhi_epi16(
-                    _mm_adds_epi16(_mm_adds_epi16(a00, a01), a02), one_third);
-                rb02 = _mm_mulhi_epi16(
-                    _mm_adds_epi16(_mm_adds_epi16(b00, b01), b02), one_third);
-
-                tmp0 = _mm_mulhi_epi16(
-                    _mm_adds_epi16(_mm_adds_epi16(ra00, ra01), ra02),
-                    one_third);
-                tmp1 = _mm_mulhi_epi16(
-                    _mm_adds_epi16(_mm_adds_epi16(rb00, rb01), rb02),
-                    one_third);
-
-                pack16to8(tmp0, tmp1, res);
-                _mm_store_si128(dst0++, res);
-
-                s00 = _mm_loadu_si128((__m128i*)(row3 - 1));
-                s01 = _mm_loadu_si128((__m128i*)(row3 + 1));
-                s02 = _mm_load_si128((__m128i*)(row3));
-                unpack8to16(s00, a00, b00);
-                unpack8to16(s01, a01, b01);
-                unpack8to16(s02, a02, b02);
-                ra00 = _mm_mulhi_epi16(
-                    _mm_adds_epi16(_mm_adds_epi16(a00, a01), a02), one_third);
-                rb00 = _mm_mulhi_epi16(
-                    _mm_adds_epi16(_mm_adds_epi16(b00, b01), b02), one_third);
-
-                tmp0 = _mm_mulhi_epi16(
-                    _mm_adds_epi16(_mm_adds_epi16(ra00, ra01), ra02),
-                    one_third);
-                tmp1 = _mm_mulhi_epi16(
-                    _mm_adds_epi16(_mm_adds_epi16(rb00, rb01), rb02),
-                    one_third);
-
-                pack16to8(tmp0, tmp1, res);
-                _mm_store_si128(dst1++, res);
-
-                row0 += 16;
-                row1 += 16;
-                row2 += 16;
-                row3 += 16;
-            }
-            // still storing 128bit, but now in 16 x 8bit format, so /16 instead
-            // of /8
-            dst0 += width / 16;
-            dst1 += width / 16;
-        }
-    };  // lambda
-
-    boxFilterSegment(1, height - 3);
-    // parFor(boxFilterSegment,1,height-3,4);
+    #ifndef _INTRINSICS_SSE
+        boxNaive(in, blurred, width, height);
+    #else
+        boxSSE(in, blurred, width, height);
+    #endif
 #endif
 }
 
-}
+}  // namespace ndb
