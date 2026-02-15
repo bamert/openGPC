@@ -101,16 +101,6 @@ void parFor(std::function<void(int, int)> const& f,
             int start,
             int end,
             int nThreads);
-/**
- * @brief      Naive 3x3 box filter implementation
- *
- * @param      in       input image
- * @param      blurred  The blurred output image
- * @param[in]  width    The width
- * @param[in]  height   The height
- * @param[in]  numThreads number of threads to use
- */
-void boxNaive(uint8_t* in, uint8_t* blurred, int width, int height);
 
 /**
  * @brief Applies a gpc filter defined by the pixel-difference tests in
@@ -154,19 +144,6 @@ void gpcFilterTauNaive(uint8_t* in,
                        std::vector<int>& idx,
                        int width,
                        int height);
-/**
-   * @brief      boxfilter using SSE2 instructions. Loosely based on
-   *             https://www.ignorantus.com/box_sse2/, published under
-   *             the https://creativecommons.org/publicdomain/zero/1.0/ licence.
-   *
-   * @param      in       input image
-   * @param      blurred  The blurred
-   * @param[in]  width    The width
-   * @param[in]  height   The height
-   * @param[in]  numThreads number of threads to use
-   */
-void box(uint8_t* in, uint8_t* blurred, int width, int height, int numThreads);
-
 /**
  * @brief Checks if the 128bits in xmm are all zero
  *

@@ -38,6 +38,7 @@
 #include <fstream>
 #include <gpc/buffer.hpp>
 #include <gpc/filter.hpp>
+#include <gpc/kernels/box.hpp>
 #include <gpc/Feature.hpp>
 #include <iostream>
 #include <iterator>
