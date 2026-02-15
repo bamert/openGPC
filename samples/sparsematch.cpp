@@ -1,7 +1,26 @@
 #include <iostream>
+#include <hwy/highway.h>
 
 #include "gpc/forest.hpp"
 using namespace std;
+void test_hwy_neon() {
+    namespace hn = hwy::HWY_NAMESPACE;
+    
+    // d is a "descriptor" for a vector of 8-bit unsigned ints
+    const hn::ScalableTag<uint8_t> d;
+    
+    // If this is NEON, hn::Lanes(d) will be 16
+    size_t lanes = hn::Lanes(d);
+    
+    auto v1 = hn::Set(d, 10);
+    auto v2 = hn::Set(d, 20);
+    auto res = hn::Add(v1, v2); // res lanes all contain 30
+    
+    std::cout << "--- Highway Status ---" << std::endl;
+    std::cout << "Target: " << hwy::TargetName(hwy::SupportedTargets()) << std::endl;
+    std::cout << "Vector lanes (uint8): " << lanes << std::endl;
+    std::cout << "----------------------" << std::endl;
+}
 int main(int argc, char** argv) {
     std::string forestPath = "../../forests/defaultZeroForest.txt";
     std::string leftImgPath = "../../data/kitti/training/image_0/000000_10.png";
@@ -72,4 +91,5 @@ int main(int argc, char** argv) {
     ndb::Buffer<ndb::RGBColor> renderDisp;
     renderDisp = ndb::getDisparityVisualization(simg, supp);
     renderDisp.writePNGRGB("disparity.png");
+    test_hwy_neon();
 }

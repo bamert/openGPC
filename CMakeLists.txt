@@ -36,6 +36,15 @@ if(SSE)
       add_compile_options(-mavx2 -march=core-avx2)
     endif()
 endif()
+include(FetchContent)
+set(HWY_ENABLE_TESTS OFF CACHE BOOL "Disable Highway tests" FORCE)
+set(HWY_ENABLE_EXAMPLES OFF CACHE BOOL "Disable Highway examples" FORCE)
+FetchContent_Declare(
+  highway
+  GIT_REPOSITORY https://github.com/google/highway.git
+  GIT_TAG        1.3.0  
+)
+FetchContent_MakeAvailable(highway)
 
 add_library(gpc_core 
     lib/gpc/forest.cpp 
@@ -52,6 +61,7 @@ target_link_libraries(gpc_core
         Eigen3::Eigen 
         ${PNG_LIBRARIES} 
         Threads::Threads
+        hwy
 )
 target_include_directories(gpc_core PUBLIC lib)
 enable_testing()
