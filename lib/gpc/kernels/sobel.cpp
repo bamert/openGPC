@@ -28,7 +28,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //
 // Code Author: Niklaus Bamert (bamertn@ethz.ch)
-
+#include <cassert>
 #include "gpc/kernels/sobel.hpp"
 namespace ndb {
 namespace testing { 
@@ -165,7 +165,7 @@ void sobel(uint8_t* in,
 #if defined(__ARM_NEON) || defined(__aarch64__)
     // Force use of our new Highway kernel on Mac
         sobelNaive(in, blurred, width, height, threshold);
-    //testing::sobel_hwy(in, blurred, width, height, threshold);
+    //testing::sobel_hwy(in, blurred, width, height, threshold); // not exact!
 #else
     #ifndef _INTRINSICS_SSE
         sobelNaive(in, blurred, width, height, threshold);

@@ -52,3 +52,5 @@ TEST(Approval, Inference)
     EXPECT_EQ(866, supp.size());
     ApprovalTests::Approvals::verify(ss.str());
 }
+
+

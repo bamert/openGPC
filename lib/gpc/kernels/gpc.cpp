@@ -28,7 +28,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //
 // Code Author: Niklaus Bamert (bamertn@ethz.ch)
-
+#include <cassert>
 #include "gpc/kernels/gpc.hpp"
 namespace ndb {
 void gpcFilterNaive(uint8_t* in,

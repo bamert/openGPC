@@ -30,6 +30,7 @@
 // Code Author: Niklaus Bamert (bamertn@ethz.ch)
 
 #include "gpc/kernels/box.hpp"
+#include <cassert>
 namespace ndb {
 namespace testing { 
     void box_hwy(uint8_t* in, uint8_t* blurred, int width, int height); 

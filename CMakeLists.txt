@@ -3,6 +3,9 @@ include(CheckCXXCompilerFlag)
 include(CheckCXXSourceRuns)
 project(openGPC CXX)
 set (REQ_CPP11_FEATURES  cxx_strong_enums cxx_auto_type)
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+endif()
 
 set(CMAKE_CXX_STANDARD 17) 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -19,7 +22,12 @@ include_directories(lib)
 #By default, use SSE intrinsics
 option(SSE "Enable SSE/AVX optimizations if available" ON)
 
-add_compile_options(-O3 -funroll-loops)
+add_compile_options(-O3 -funroll-loops -flto)
+if(APPLE AND CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
+    add_compile_options(-mcpu=apple-m1)
+elseif(NOT MSVC)
+    add_compile_options(-march=native)
+endif()
 if(SSE)
     message(STATUS "Checking if target CPU supports AVX2 instructions...")
     check_cxx_source_runs("
@@ -46,6 +54,17 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(highway)
 
+include(FetchContent)
+set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+set(BENCHMARK_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
+set(BENCHMARK_ENABLE_GTEST_LIB OFF CACHE BOOL "" FORCE)
+
+FetchContent_Declare(
+  google_benchmark
+  GIT_REPOSITORY https://github.com/google/benchmark.git
+  GIT_TAG        v1.9.5  
+)
+FetchContent_MakeAvailable(google_benchmark)
 add_library(gpc_core 
     lib/gpc/forest.cpp 
     lib/gpc/fern.cpp 
@@ -69,4 +88,5 @@ target_include_directories(gpc_core PUBLIC lib)
 enable_testing()
 add_subdirectory(samples)
 add_subdirectory(tests)
+add_subdirectory(benchmarks)
 

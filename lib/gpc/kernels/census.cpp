@@ -28,7 +28,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //
 // Code Author: Niklaus Bamert (bamertn@ethz.ch)
-
+#include <cassert>
 #include "gpc/kernels/census.hpp"
 void census5x5Naive(uint8_t* in, uint32_t* census, int width, int height) {
     uint32_t val;

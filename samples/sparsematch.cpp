@@ -51,7 +51,7 @@ int main(int argc, char** argv) {
     gpc::inference::InferenceSettings inferencesettings =
         gpc::inference::InferenceSettings()
             .builder()
-            .gradientThreshold(20)
+            .gradientThreshold(2) // gradientthres 20: matching ~3ms, 2: matching: ~30ms. 
             .verticalTolerance(
                 0)               // 0px tolerance for rectified epipolar matches
             .dispHigh(128)       // limit disparities to 128
@@ -68,9 +68,12 @@ int main(int argc, char** argv) {
     gpc::inference::FilterMask fm =
         forest.readForest(forestPath, simg.cols(), simg.rows());
 
+    for(int i = 0; i<10000; i++) {
     // Preprocess images (box filter, sobel filter, indices of high gradient
     // pixels)
+
     gpc::inference::time_point t0 = gpc::inference::sysTick();
+
     gpc::inference::PreprocessedImage simgP =
         forest.preprocessImage(simg, inferencesettings);
     gpc::inference::PreprocessedImage timgP =
@@ -81,15 +84,8 @@ int main(int argc, char** argv) {
     std::vector<ndb::Support> supp =
         forest.rectifiedMatch(simgP, timgP, fm, inferencesettings);
     gpc::inference::time_point t2 = gpc::inference::sysTick();
-    cout << "tPreprocess: " << gpc::inference::tickToMs(t1, t0) << " ms"
-         << ", #candidatesL:" << simgP.mask.size()
-         << ", #candidatesR:" << timgP.mask.size()
-         << ", tMatch: " << gpc::inference::tickToMs(t2, t1) << " ms"
-         << ", num matches:" << supp.size() << std::endl;
-
-    // Output sparse disparities overlayed on left input image
-    ndb::Buffer<ndb::RGBColor> renderDisp;
-    renderDisp = ndb::getDisparityVisualization(simg, supp);
-    renderDisp.writePNGRGB("disparity.png");
+    std::cout << "Preprocessing time: " << gpc::inference::tickToMs(t1, t0) << " ms" << std::endl;
+    std::cout << "Matching time: " << gpc::inference::tickToMs(t2, t1) << " ms" << std::endl;
+    }
     test_hwy_neon();
 }
