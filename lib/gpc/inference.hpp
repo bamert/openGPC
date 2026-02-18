@@ -465,7 +465,6 @@ class Forest {
         int numFerns;
         int type;
         ff >> numFerns;
-        cout << "number of ferns:" << numFerns << endl;
         for (int i = 0; i < numFerns; i++) {
             int fernID, numTests;
             std::string fernScale;
