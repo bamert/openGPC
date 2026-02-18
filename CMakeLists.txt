@@ -40,4 +40,5 @@ endif()
 enable_testing()
 add_subdirectory(samples)
 add_subdirectory(tests)
+add_subdirectory(benchmark)
 
