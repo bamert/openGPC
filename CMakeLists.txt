@@ -37,6 +37,13 @@ if(SSE)
     endif()
 endif()
 
+FetchContent_Declare(
+  google_benchmark
+  GIT_REPOSITORY https://github.com/google/benchmark.git
+  GIT_TAG        v1.9.5  
+)
+FetchContent_MakeAvailable(google_benchmark)
+
 enable_testing()
 add_subdirectory(samples)
 add_subdirectory(tests)
