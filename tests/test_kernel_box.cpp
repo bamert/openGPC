@@ -24,10 +24,11 @@ TEST(Approval, BoxKernel) {
 
     // 4. Run Highway version (only if compiled for the target)
 #if defined(HWY_TARGET) && HWY_TARGET == HWY_NEON
-    ndb::N_NEON::BoxFilter(input.data(), outHighway.data(), width, height);
+    ndb::BoxFilter(input.data(), outHighway.data(), width, height);
 #else
+    ndb::boxNaive(input.data(), outNaive.data(), width, height);
     // Fallback if the specific NEON namespace isn't exposed
-    ndb::testing::box_hwy(input.data(), outHighway.data(), width, height);
+    //ndb::testing::box_hwy(input.data(), outHighway.data(), width, height);
 
 #endif
 

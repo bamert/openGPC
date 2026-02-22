@@ -37,7 +37,7 @@
 #include "gpc/buffer.hpp"
 using namespace std;
 
-#ifdef _INTRINSICS_SSE
+#if HWY_TARGET == HWY_AVX2
 #include <immintrin.h>
 // greater and lesser than simd ops for unsigned 8bit integer (epu8)
 #define _mm_cmpgt_epu8(v0, v1)                             \
@@ -63,7 +63,7 @@ void arr2ind(const unsigned char* a,
                                        int* ind,
                                        int* m);
 
-#ifdef _INTRINSICS_SSE
+#if HWY_TARGET == HWY_AVX2
 /**
  * @brief      Unpacks 16x8bit from a 128bit simd var into 2x128bit vars
  *             (8x16bit)

@@ -34,6 +34,12 @@
 #include "gpc/buffer.hpp"
 
 namespace ndb {
+#if HWY_TARGET == HWY_AVX2
+void sobelSSE(const uint8_t* in, uint8_t* blurred, 
+                            int width, int start, int end, 
+                            uint8_t threshold);
+ 
+#endif
 /**
  * @brief Naive 3x3 sobel filter implementation
  *

@@ -30,6 +30,7 @@
 // Code Author: Niklaus Bamert (bamertn@ethz.ch)
 #include <cassert>
 #include "gpc/kernels/sobel.hpp"
+#include "gpc/kernels/utils.hpp"
 namespace ndb {
 namespace testing { 
     void sobel_hwy(uint8_t* in, uint8_t* blurred, int width, int height, uint8_t threshold); 
@@ -77,12 +78,9 @@ void sobelNaive(
         }
     }
 }
-#ifdef _INTRINSICS_SSE
+//#ifdef _INTRINSICS_SSE
+#if HWY_TARGET == HWY_AVX2
 #include <immintrin.h>
-
-// Assuming your helper macros/inline funcs are defined elsewhere
-// pack16to8(lo, hi, res) 
-// unpack8to16(in, lo, hi)
 
 void sobelSSE(const uint8_t* in, uint8_t* blurred, 
                             int width, int start, int end, 

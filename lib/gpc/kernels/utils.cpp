@@ -31,6 +31,7 @@
 #include <cassert>
 #include <thread>
 #include <functional>
+#include "gpc/kernels/utils.hpp"
 
 using namespace std;
 
@@ -39,7 +40,7 @@ void arr2ind(const unsigned char* a,
                                        int n,
                                        int* ind,
                                        int* m) {
-#ifdef _INTRINSICS_SSE
+#if HWY_TARGET == HWY_AVX2
     int i, m0, k;
     __m256i msk;
     m0 = 0;
@@ -69,7 +70,7 @@ void arr2ind(const unsigned char* a,
     *m = nnz;
 #endif
 }
-#ifdef _INTRINSICS_SSE
+#if HWY_TARGET == HWY_AVX2
 void unpack8to16(const __m128i x, __m128i& y0, __m128i& y1) {
     __m128i zero = _mm_setzero_si128();
     y0 = _mm_unpacklo_epi8(x, zero);

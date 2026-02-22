@@ -7,7 +7,9 @@ static void BM_SobelLegacy(benchmark::State& state) {
     std::vector<uint8_t> out(w * h, 0);
 
     for (auto _ : state) {
-        ndb::sobel(in.data(), out.data(), w, h, 50, 1);
+        //ndb::sobel(in.data(), out.data(), w, h, 50, 1);
+        //ndb::sobelSSE(in.data(), out.data(), w, 1, h - 1, 1);
+        ndb::sobelNaive(in.data(), out.data(), w, h, 1);
         
         // Ensure the compiler doesn't skip the work
         benchmark::DoNotOptimize(out.data());

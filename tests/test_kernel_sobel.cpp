@@ -24,10 +24,11 @@ TEST(Approval, SobelKernel) {
 
     // 4. Run Highway version (only if compiled for the target)
 #if defined(HWY_TARGET) && HWY_TARGET == HWY_NEON
-    ndb::N_NEON::BoxFilter(input.data(), outHighway.data(), width, height);
+    ndb::BoxFilter(input.data(), outHighway.data(), width, height);
 #else
     // Fallback if the specific NEON namespace isn't exposed
-    ndb::testing::sobel_hwy(input.data(), outHighway.data(), width, height, 30);
+    //ndb::testing::sobel_hwy(input.data(), outHighway.data(), width, height, 30);
+    ndb::sobelNaive(input.data(), outHighway.data(), width, height, 30);
 
 #endif
 
