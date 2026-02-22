@@ -7,4 +7,3 @@ target_link_libraries(train gpc_core)
 add_executable(sparsematch sparsematch.cpp)
 target_link_libraries(sparsematch gpc_core)
 
-

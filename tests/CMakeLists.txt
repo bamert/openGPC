@@ -29,4 +29,3 @@ add_gpc_approval_test(test_single_matching test_single_matching.cpp)
 add_gpc_approval_test(test_kernel_box test_kernel_box.cpp)
 add_gpc_approval_test(test_kernel_sobel test_kernel_sobel.cpp)
 
-

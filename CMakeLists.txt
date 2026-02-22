@@ -11,6 +11,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+include(FetchContent)
 find_package(Eigen3 REQUIRED)
 find_package(PNG REQUIRED)
 find_package(Threads REQUIRED)
@@ -85,6 +86,7 @@ target_link_libraries(gpc_core
         hwy
 )
 target_include_directories(gpc_core PUBLIC lib)
+
 enable_testing()
 add_subdirectory(samples)
 add_subdirectory(tests)
