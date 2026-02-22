@@ -33,6 +33,7 @@
 
 #include <cassert>
 #include <thread>
+#include <hwy/highway.h>
 
 #include "gpc/buffer.hpp"
 using namespace std;

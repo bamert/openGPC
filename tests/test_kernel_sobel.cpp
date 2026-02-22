@@ -7,7 +7,8 @@
 TEST(Approval, SobelKernel) {
     const int width = 640;
     const int height = 480;
-    const int radius = 2; // Typical for 5x5 box
+    const int radius = 2; // Typical for 5x5 bo
+    const int threshold = 30; // Example threshold for binarization
 
     // 1. Prepare randomized input
     std::vector<uint8_t> input(width * height);
@@ -20,17 +21,10 @@ TEST(Approval, SobelKernel) {
     std::vector<uint8_t> outHighway(width * height, 0);
 
     // 3. Run Naive version
-    ndb::sobelNaive(input.data(), outNaive.data(), width, height, 30);
+    ndb::sobelNaive(input.data(), outNaive.data(), width, height, threshold);
 
     // 4. Run Highway version (only if compiled for the target)
-#if defined(HWY_TARGET) && HWY_TARGET == HWY_NEON
-    ndb::BoxFilter(input.data(), outHighway.data(), width, height);
-#else
-    // Fallback if the specific NEON namespace isn't exposed
-    //ndb::testing::sobel_hwy(input.data(), outHighway.data(), width, height, 30);
-    ndb::sobelNaive(input.data(), outHighway.data(), width, height, 30);
-
-#endif
+    ndb::testing::sobel_hwy(input.data(), outHighway.data(), width, height, threshold);
 
     // 5. Compare results
     // We skip the border (radius) because different implementations 
