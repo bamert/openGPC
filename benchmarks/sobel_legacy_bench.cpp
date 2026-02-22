@@ -1,7 +1,7 @@
 #include <benchmark/benchmark.h>
 #include "gpc/kernels/sobel.hpp" 
 
-static void BM_SobelHighway(benchmark::State& state) {
+static void BM_SobelLegacy(benchmark::State& state) {
     int w = 1920, h = 1080;
     std::vector<uint8_t> in(w * h, 128);
     std::vector<uint8_t> out(w * h, 0);
@@ -16,6 +16,6 @@ static void BM_SobelHighway(benchmark::State& state) {
     
     state.SetBytesProcessed(int64_t(state.iterations()) * w * h);
 }
-BENCHMARK(BM_SobelHighway)->Unit(benchmark::kMillisecond);
+BENCHMARK(BM_SobelLegacy)->Unit(benchmark::kMillisecond);
 
 BENCHMARK_MAIN();
