@@ -30,6 +30,7 @@
 // Code Author: Niklaus Bamert (bamertn@ethz.ch)
 #include <cassert>
 #include <thread>
+#include <functional>
 
 using namespace std;
 
