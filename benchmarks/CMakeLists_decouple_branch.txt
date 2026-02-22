@@ -1,0 +1,11 @@
+add_executable(kernel_bench sobel_bench.cpp)
+
+target_link_libraries(kernel_bench 
+    PRIVATE 
+        gpc_core 
+        benchmark::benchmark 
+        hwy
+)
+
+# allows the compiler to inline Highway kernels into the benchmark loop
+set_target_properties(kernel_bench PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
