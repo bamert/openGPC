@@ -40,8 +40,8 @@ static void fullInference(
             forest.preprocessImage(timg, inferencesettings);
         std::vector<ndb::Support> supp =
             forest.rectifiedMatch(simgP, timgP, fm, inferencesettings);
-        state.counters["f_s"] = simgP.mask.size();
-        state.counters["f_t"] = timgP.mask.size();
+        state.counters["candidates_s"] = simgP.mask.size();
+        state.counters["candidates_t"] = timgP.mask.size();
         state.counters["matches"] = supp.size();
         benchmark::DoNotOptimize(supp);
         benchmark::ClobberMemory();
@@ -53,17 +53,10 @@ BENCHMARK(fullInference)
     ->Unit(benchmark::kMillisecond)
     ->Args({0})
     ->Args({5})
+    ->Args({10})
+    ->Args({20})
+    ->Args({50})
     ->Args({100});
 
 
 BENCHMARK_MAIN();
-/*
-int main(int argc, char** argv) {
-
-        BenchmarkResults b = fullInference(simg,timg, fm, inferenceSettings);
-    for (const auto& [name, time] : b) {
-        cout << name << ", " << time << " ms" << endl;
-    }
-
-}
-*/
