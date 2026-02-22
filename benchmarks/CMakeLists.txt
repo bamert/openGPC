@@ -7,5 +7,5 @@ target_link_libraries(kernel_bench
         hwy
 )
 
-# allows the compiler to inline Highway kernels into the benchmark loop
+G# allows the compiler to inline Highway kernels into the benchmark loop
 set_target_properties(kernel_bench PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
