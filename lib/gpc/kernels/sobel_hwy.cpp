@@ -1,4 +1,4 @@
-#define HWY_TARGET HWY_NEON 
+//#define HWY_TARGET HWY_NEON 
 #include <hwy/highway.h>
 
 HWY_BEFORE_NAMESPACE(); 

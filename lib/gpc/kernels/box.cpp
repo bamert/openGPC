@@ -30,6 +30,7 @@
 // Code Author: Niklaus Bamert (bamertn@ethz.ch)
 
 #include "gpc/kernels/box.hpp"
+#include "gpc/kernels/utils.hpp"
 #include <cassert>
 namespace ndb {
 namespace testing { 
@@ -73,7 +74,7 @@ void boxNaive(uint8_t* in, uint8_t* blurred, int width, int height) {
         }
     }
 }
-#ifdef _INTRINSICS_SSE
+#if HWY_TARGET == HWY_AVX2
 /**
  * @brief SSE implementation of the 3x3 box filter.
  * Processed two rows at a time using fixed-point multiplication for division.
@@ -168,10 +169,10 @@ void box(uint8_t* in, uint8_t* blurred, int width, int height, int numThreads) {
     // Force use of our new Highway kernel on Mac
     testing::box_hwy(in, blurred, width, height);
 #else
-    #ifndef _INTRINSICS_SSE
-        boxNaive(in, blurred, width, height);
-    #else
+    #if HWY_TARGET == HWY_AVX2
         boxSSE(in, blurred, width, height);
+    #else
+        boxNaive(in, blurred, width, height);
     #endif
 #endif
 }

@@ -60,6 +60,9 @@ void boxNaive(uint8_t* in, uint8_t* blurred, int width, int height);
    */
 void box(uint8_t* in, uint8_t* blurred, int width, int height, int numThreads);
 
+#if HWY_TARGET == HWY_AVX2
+void boxSSE(uint8_t* in, uint8_t* blurred, int width, int height); 
+#endif
 
 }
 #endif

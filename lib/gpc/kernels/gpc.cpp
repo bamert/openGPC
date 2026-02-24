@@ -79,10 +79,72 @@ void gpcFilterTauNaive(uint8_t* in,
 } 
 
 
-#ifdef _INTRINSICS_SSE
+#if (HWY_ARCH_X86) && (HWY_TARGET == HWY_AVX2)
 bool isAllZeros(__m128i xmm) {
     return _mm_movemask_epi8(_mm_cmpeq_epi8(xmm, _mm_setzero_si128())) ==
            0xFFFF;
+}
+void gpcFilterSSE(uint8_t* in,
+               const uint8_t* grad,
+               uint32_t* gpc,
+               std::vector<int32_t> fastmask,
+               std::vector<int>& idx,
+               int width,
+               int height) {
+    const int start  = 13; 
+    const int end = height - 15;
+    __m128i zero = _mm_set1_epi8(0);
+    __m128i one = _mm_set1_epi8(1);
+    for (int y = start; y < end; y++) {
+        for (int x = 0; x < width; x += 16) {
+            uint8_t* rowPtr;
+            rowPtr = in + (y - 2) * width + x;
+            __m128i out[4];  // temporary output vector of 4 128bit words
+
+            const uint8_t* center = (in + y * width + x);
+            const uint8_t* centerGrad = (grad + y * width + x);
+            // We only process the current segment if there are any non-zero
+            // values (high gradient pixels)
+            if (!isAllZeros(_mm_lddqu_si128((__m128i*)centerGrad))) {
+                __m128i* dst =
+                    (__m128i*)(gpc + y * width +
+                               x);  // Set starting point to pixel (2,2)
+                out[0] = zero;
+                out[1] = zero;
+                out[2] = zero;
+                out[3] = zero;
+                uint8_t k = 0;
+                __m128i bitMask = one;
+                for (uint8_t i = 0; i < fastmask.size() && i < 64; i += 2) {
+                    out[k] |= _mm_and_si128(
+                        _mm_cmpgt_epu8(
+                            _mm_lddqu_si128(
+                                (__m128i*)(center + fastmask[i])),
+                            _mm_lddqu_si128(
+                                (__m128i*)(center + fastmask[i + 1]))),
+                        bitMask);
+                    // Keeps index into output vector and updates bit mask
+                    if (i % 16 == 0 && i != 0) {
+                        bitMask = one;
+                        k++;
+                    } else {
+                        bitMask += bitMask;
+                    }
+                }
+                // 8bit to 16bit
+                __m128i high1 = _mm_unpacklo_epi8(out[2], out[3]);
+                __m128i high2 = _mm_unpackhi_epi8(out[2], out[3]);
+                __m128i low1 = _mm_unpacklo_epi8(out[0], out[1]);
+                __m128i low2 = _mm_unpackhi_epi8(out[0], out[1]);
+
+                // 16bit to 32bit ints
+                _mm_storeu_si128(dst, _mm_unpacklo_epi16(low1, high1));
+                _mm_storeu_si128(dst + 1, _mm_unpackhi_epi16(low1, high1));
+                _mm_storeu_si128(dst + 2, _mm_unpacklo_epi16(low2, high2));
+                _mm_storeu_si128(dst + 3, _mm_unpackhi_epi16(low2, high2));
+            }
+        }  // col iteration
+    }  // row iteration
 }
 #endif
 void gpcFilter(uint8_t* in,
@@ -91,73 +153,89 @@ void gpcFilter(uint8_t* in,
                std::vector<int32_t> fastmask,
                std::vector<int>& idx,
                int width,
-               int height,
-               int numThreads) {
+               int height){
     assert(width % 16 == 0 && "width must be multiple of 16!");
-#ifndef _INTRINSICS_SSE
+#if defined(__ARM_NEON) || defined(__aarch64__)
+    // Replace with call to highway
     gpcFilterNaive(in, grad, gpc, fastmask, idx, width, height);
 #else
-    auto gpcFilterSegment = [&](int start, int end) {
-        __m128i zero = _mm_set1_epi8(0);
-        __m128i one = _mm_set1_epi8(1);
-        for (int y = start; y < end; y++) {
-            for (int x = 0; x < width; x += 16) {
-                uint8_t* rowPtr;
-                rowPtr = in + (y - 2) * width + x;
-                __m128i out[4];  // temporary output vector of 4 128bit words
-
-                const uint8_t* center = (in + y * width + x);
-                const uint8_t* centerGrad = (grad + y * width + x);
-                // We only process the current segment if there are any non-zero
-                // values (high gradient pixels)
-                if (!isAllZeros(_mm_lddqu_si128((__m128i*)centerGrad))) {
-                    __m128i* dst =
-                        (__m128i*)(gpc + y * width +
-                                   x);  // Set starting point to pixel (2,2)
-                    out[0] = zero;
-                    out[1] = zero;
-                    out[2] = zero;
-                    out[3] = zero;
-                    uint8_t k = 0;
-                    __m128i bitMask = one;
-                    for (uint8_t i = 0; i < fastmask.size() && i < 64; i += 2) {
-                        out[k] |= _mm_and_si128(
-                            _mm_cmpgt_epu8(
-                                _mm_lddqu_si128(
-                                    (__m128i*)(center + fastmask[i])),
-                                _mm_lddqu_si128(
-                                    (__m128i*)(center + fastmask[i + 1]))),
-                            bitMask);
-                        // Keeps index into output vector and updates bit mask
-                        if (i % 16 == 0 && i != 0) {
-                            bitMask = one;
-                            k++;
-                        } else {
-                            bitMask += bitMask;
-                        }
-                    }
-                    // 8bit to 16bit
-                    __m128i high1 = _mm_unpacklo_epi8(out[2], out[3]);
-                    __m128i high2 = _mm_unpackhi_epi8(out[2], out[3]);
-                    __m128i low1 = _mm_unpacklo_epi8(out[0], out[1]);
-                    __m128i low2 = _mm_unpackhi_epi8(out[0], out[1]);
-
-                    // 16bit to 32bit ints
-                    _mm_storeu_si128(dst, _mm_unpacklo_epi16(low1, high1));
-                    _mm_storeu_si128(dst + 1, _mm_unpackhi_epi16(low1, high1));
-                    _mm_storeu_si128(dst + 2, _mm_unpacklo_epi16(low2, high2));
-                    _mm_storeu_si128(dst + 3, _mm_unpackhi_epi16(low2, high2));
-                }
-            }  // col iteration
-        }  // row iteration
-    };
-
-    if (numThreads == 1)
-        gpcFilterSegment(13, height - 15);
-    else
-        parFor(gpcFilterSegment, 13, height - 15, 4);
+    #if (HWY_ARCH_X86) && (HWY_TARGET == HWY_AVX2)
+        gpcFilterSSE(in, grad, gpc, fastmask, idx, width, height);
+    #else 
+        gpcFilterNaive(in, grad, gpc, fastmask, idx, width, height);
+#endif
 #endif
 }
+
+#if (HWY_ARCH_X86) && (HWY_TARGET == HWY_AVX2)
+void gpcFilterTauSSE(uint8_t* in,
+                  const uint8_t* grad,
+                  uint32_t* gpc,
+                  std::vector<int32_t> fastmask,
+                  std::vector<int> tau,
+                  std::vector<int>& idx,
+                  int width,
+                  int height){
+    const int start  = 13; 
+    const int end = height - 15;
+    __m128i zero = _mm_set1_epi8(0);
+    __m128i one = _mm_set1_epi8(1);
+    for (int y = start; y < end; y++) {
+        for (int x = 0; x < width; x += 16) {
+            uint8_t* rowPtr;
+            rowPtr = in + (y - 2) * width + x;
+            __m128i out[4];  // temporary output vector of 4 128bit words
+
+            const uint8_t* center = (in + y * width + x);
+            const uint8_t* centerGrad = (grad + y * width + x);
+            // We only process the current segment if there are any non-zero
+            // values (high gradient pixels)
+            if (!isAllZeros(_mm_lddqu_si128((__m128i*)centerGrad))) {
+                __m128i* dst =
+                    (__m128i*)(gpc + y * width +
+                               x);  // Set starting point to pixel (2,2)
+                out[0] = zero;
+                out[1] = zero;
+                out[2] = zero;
+                out[3] = zero;
+                uint8_t k = 0;
+                __m128i bitMask = one;
+                for (uint8_t i = 0; i < fastmask.size() && i < 64; i += 2) {
+                    out[k] |= _mm_and_si128(
+                        _mm_cmpgt_epu8(
+                            _mm_lddqu_si128(
+                                (__m128i*)(center + fastmask[i])),
+                            _mm_subs_epi8(
+                                _mm_lddqu_si128(
+                                    (__m128i*)(center + fastmask[i + 1])),
+                                _mm_set1_epi8(tau[i / 2]))  // deduct tau
+                            ),
+                        bitMask);
+                    // Keeps index into output vector and updates bit mask
+                    if (i % 16 == 0 && i != 0) {
+                        bitMask = one;
+                        k++;
+                    } else {
+                        bitMask += bitMask;
+                    }
+                }
+                // 8bit to 16bit
+                __m128i high1 = _mm_unpacklo_epi8(out[2], out[3]);
+                __m128i high2 = _mm_unpackhi_epi8(out[2], out[3]);
+                __m128i low1 = _mm_unpacklo_epi8(out[0], out[1]);
+                __m128i low2 = _mm_unpackhi_epi8(out[0], out[1]);
+
+                // 16bit to 32bit ints
+                _mm_storeu_si128(dst, _mm_unpacklo_epi16(low1, high1));
+                _mm_storeu_si128(dst + 1, _mm_unpackhi_epi16(low1, high1));
+                _mm_storeu_si128(dst + 2, _mm_unpacklo_epi16(low2, high2));
+                _mm_storeu_si128(dst + 3, _mm_unpackhi_epi16(low2, high2));
+            }
+        }  // col iteration
+    }  // row iteration
+}
+#endif
+
 void gpcFilterTau(uint8_t* in,
                   const uint8_t* grad,
                   uint32_t* gpc,
@@ -165,75 +243,19 @@ void gpcFilterTau(uint8_t* in,
                   std::vector<int> tau,
                   std::vector<int>& idx,
                   int width,
-                  int height,
-                  int numThreads) {
+                  int height){
     assert(width % 16 == 0 && "width must be multiple of 16!");
-#ifndef _INTRINSICS_SSE
+#if defined(__ARM_NEON) || defined(__aarch64__)
+    // Replace with call to highway
     gpcFilterTauNaive(in, grad, gpc, fastmask, tau, idx, width, height);
 #else
-    auto gpcFilterSegment = [&](int start, int end) {
-        __m128i zero = _mm_set1_epi8(0);
-        __m128i one = _mm_set1_epi8(1);
-        for (int y = start; y < end; y++) {
-            for (int x = 0; x < width; x += 16) {
-                uint8_t* rowPtr;
-                rowPtr = in + (y - 2) * width + x;
-                __m128i out[4];  // temporary output vector of 4 128bit words
-
-                const uint8_t* center = (in + y * width + x);
-                const uint8_t* centerGrad = (grad + y * width + x);
-                // We only process the current segment if there are any non-zero
-                // values (high gradient pixels)
-                if (!isAllZeros(_mm_lddqu_si128((__m128i*)centerGrad))) {
-                    __m128i* dst =
-                        (__m128i*)(gpc + y * width +
-                                   x);  // Set starting point to pixel (2,2)
-                    out[0] = zero;
-                    out[1] = zero;
-                    out[2] = zero;
-                    out[3] = zero;
-                    uint8_t k = 0;
-                    __m128i bitMask = one;
-                    for (uint8_t i = 0; i < fastmask.size() && i < 64; i += 2) {
-                        out[k] |= _mm_and_si128(
-                            _mm_cmpgt_epu8(
-                                _mm_lddqu_si128(
-                                    (__m128i*)(center + fastmask[i])),
-                                _mm_subs_epi8(
-                                    _mm_lddqu_si128(
-                                        (__m128i*)(center + fastmask[i + 1])),
-                                    _mm_set1_epi8(tau[i / 2]))  // deduct tau
-                                ),
-                            bitMask);
-                        // Keeps index into output vector and updates bit mask
-                        if (i % 16 == 0 && i != 0) {
-                            bitMask = one;
-                            k++;
-                        } else {
-                            bitMask += bitMask;
-                        }
-                    }
-                    // 8bit to 16bit
-                    __m128i high1 = _mm_unpacklo_epi8(out[2], out[3]);
-                    __m128i high2 = _mm_unpackhi_epi8(out[2], out[3]);
-                    __m128i low1 = _mm_unpacklo_epi8(out[0], out[1]);
-                    __m128i low2 = _mm_unpackhi_epi8(out[0], out[1]);
-
-                    // 16bit to 32bit ints
-                    _mm_storeu_si128(dst, _mm_unpacklo_epi16(low1, high1));
-                    _mm_storeu_si128(dst + 1, _mm_unpackhi_epi16(low1, high1));
-                    _mm_storeu_si128(dst + 2, _mm_unpacklo_epi16(low2, high2));
-                    _mm_storeu_si128(dst + 3, _mm_unpackhi_epi16(low2, high2));
-                }
-            }  // col iteration
-        }  // row iteration
-    };
-
-    if (numThreads == 1)
-        gpcFilterSegment(13, height - 15);
-    else
-        parFor(gpcFilterSegment, 13, height - 15, 4);
+    #if (HWY_ARCH_X86) && (HWY_TARGET == HWY_AVX2)
+        gpcFilterTauSSE(in, grad, gpc, fastmask, tau, idx, width, height);
+    #else 
+        gpcFilterTauNaive(in, grad, gpc, fastmask, tau, idx, width, height);
 #endif
+#endif
+
 }
-}
+} // namespace ndb
 

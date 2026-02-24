@@ -52,6 +52,7 @@ add_library(gpc_core
     lib/gpc/kernels/utils.cpp
     lib/gpc/kernels/box_hwy.cpp
     lib/gpc/kernels/sobel_hwy.cpp
+    lib/gpc/kernels/gpc_hwy.cpp
 )
 if(MSVC)
     target_compile_options(gpc_core PUBLIC /arch:AVX2)

@@ -170,8 +170,7 @@ std::vector<ndb::Descriptor> Forest::evalFastMaskOnSubsetSSE(
                        fastmask.mask,
                        idx,
                        img.cols(),
-                       img.rows(),
-                       settings.numThreads_);
+                       img.rows());
     } else {
         ndb::gpcFilterTau(img.data(),
                           grad.data(),
@@ -180,8 +179,7 @@ std::vector<ndb::Descriptor> Forest::evalFastMaskOnSubsetSSE(
                           fastmask.tau,
                           idx,
                           img.cols(),
-                          img.rows(),
-                          settings.numThreads_);
+                          img.rows());
     }
     std::vector<ndb::Descriptor> out(idx.size());
     int j = 0;

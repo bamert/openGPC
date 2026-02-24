@@ -15,16 +15,9 @@ target_link_libraries(kernel_bench
         gpc_core
         benchmark::benchmark 
 )
-add_executable(sobel_legacy_bench sobel_legacy_bench.cpp)
+add_executable(box_bench box_bench.cpp)
 
-target_link_libraries(sobel_legacy_bench
-    PRIVATE 
-        gpc_core
-        benchmark::benchmark 
-)
-add_executable(box_legacy_bench box_legacy_bench.cpp)
-
-target_link_libraries(box_legacy_bench
+target_link_libraries(box_bench
     PRIVATE 
         gpc_core
         benchmark::benchmark 

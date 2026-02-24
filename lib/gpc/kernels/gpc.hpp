@@ -49,7 +49,6 @@ namespace ndb {
  *                  and the call gets forwarded to the naive implementation.
  * @param width     The width of the image at pointer *in
  * @param height    The height of the image at pointer *in
- * @param numThreadsNumber of threads to use
  */
 void gpcFilter(uint8_t* in,
                const uint8_t* grad,
@@ -57,8 +56,7 @@ void gpcFilter(uint8_t* in,
                std::vector<int32_t> fastmask,
                std::vector<int>& idx,
                int width,
-               int height,
-               int numThreads);
+               int height);
 
 
 /**
@@ -93,7 +91,6 @@ void gpcFilterNaive(uint8_t* in,
  * @param fastmask  The fastmask containing the gpc filter
  * @param width     The width of the image at pointer *in
  * @param height    The height of the image at pointer *in
- * @param numThreads Number of threads to use
  */
 void gpcFilterTau(uint8_t* in,
                   const uint8_t* grad,
@@ -102,8 +99,7 @@ void gpcFilterTau(uint8_t* in,
                   std::vector<int> tau,
                   std::vector<int>& idx,
                   int width,
-                  int height,
-                  int numThreads); 
+                  int height);
 
 /**
  * @brief Applies a gpc filter defined by the pixel-difference tests in
@@ -132,8 +128,25 @@ void gpcFilterTauNaive(uint8_t* in,
  *
  * @return true if all zeros, false otherwise
  */
-#ifdef _INTRINSICS_SSE
+#if (HWY_ARCH_X86) && (HWY_TARGET == HWY_AVX2)
 bool isAllZeros(__m128i xmm);
+void gpcFilterTauSSE(uint8_t* in,
+                  const uint8_t* grad,
+                  uint32_t* gpc,
+                  std::vector<int32_t> fastmask,
+                  std::vector<int> tau,
+                  std::vector<int>& idx,
+                  int width,
+                  int height);
+void gpcFilterSSE(uint8_t* in,
+               const uint8_t* grad,
+               uint32_t* gpc,
+               std::vector<int32_t> fastmask,
+               std::vector<int>& idx,
+               int width,
+               int height);
+
+
 #endif
 
 
