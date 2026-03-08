@@ -22,3 +22,10 @@ target_link_libraries(box_bench
         gpc_core
         benchmark::benchmark 
 )
+add_executable(correspondence_bench correspondence_bench.cpp)
+
+target_link_libraries(correspondence_bench
+    PRIVATE 
+        gpc_core
+        benchmark::benchmark 
+)

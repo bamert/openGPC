@@ -3,29 +3,11 @@
 
 #include "gpc/forest.hpp"
 using namespace std;
-void test_hwy_neon() {
-    namespace hn = hwy::HWY_NAMESPACE;
-    
-    // d is a "descriptor" for a vector of 8-bit unsigned ints
-    const hn::ScalableTag<uint8_t> d;
-    
-    // If this is NEON, hn::Lanes(d) will be 16
-    size_t lanes = hn::Lanes(d);
-    
-    auto v1 = hn::Set(d, 10);
-    auto v2 = hn::Set(d, 20);
-    auto res = hn::Add(v1, v2); // res lanes all contain 30
-    
-    std::cout << "--- Highway Status ---" << std::endl;
-    std::cout << "Target: " << hwy::TargetName(hwy::SupportedTargets()) << std::endl;
-    std::cout << "Vector lanes (uint8): " << lanes << std::endl;
-    std::cout << "----------------------" << std::endl;
-}
+
 int main(int argc, char** argv) {
-    std::string forestPath = "../../forests/defaultZeroForest.txt";
-    std::string leftImgPath = "../../data/kitti/training/image_0/000000_10.png";
-    std::string rightImgPath =
-        "../../data/kitti/training/image_1/000000_10.png";
+    std::string forestPath = "../forests/defaultZeroForest.txt";
+    std::string leftImgPath = "../data/middlebury/im0.png";
+    std::string rightImgPath = "../data/middlebury/im1.png";
 
     if (argc == 4) {
         forestPath = argv[1];
@@ -51,7 +33,7 @@ int main(int argc, char** argv) {
     gpc::inference::InferenceSettings inferencesettings =
         gpc::inference::InferenceSettings()
             .builder()
-            .gradientThreshold(2) // gradientthres 20: matching ~3ms, 2: matching: ~30ms. 
+            .gradientThreshold(1) // gradientthres 20: matching ~3ms, 2: matching: ~30ms. 
             .verticalTolerance(
                 0)               // 0px tolerance for rectified epipolar matches
             .dispHigh(128)       // limit disparities to 128
@@ -68,9 +50,6 @@ int main(int argc, char** argv) {
     gpc::inference::FilterMask fm =
         forest.readForest(forestPath, simg.cols(), simg.rows());
 
-    for(int i = 0; i<10000; i++) {
-    // Preprocess images (box filter, sobel filter, indices of high gradient
-    // pixels)
 
     gpc::inference::time_point t0 = gpc::inference::sysTick();
 
@@ -84,8 +63,8 @@ int main(int argc, char** argv) {
     std::vector<ndb::Support> supp =
         forest.rectifiedMatch(simgP, timgP, fm, inferencesettings);
     gpc::inference::time_point t2 = gpc::inference::sysTick();
+    std::cout << "Number of features(s,t): " << simgP.mask.size() << "," << timgP.mask.size() << std::endl;
+    std::cout << "Number of matches: " << supp.size() << std::endl;
     std::cout << "Preprocessing time: " << gpc::inference::tickToMs(t1, t0) << " ms" << std::endl;
     std::cout << "Matching time: " << gpc::inference::tickToMs(t2, t1) << " ms" << std::endl;
-    }
-    test_hwy_neon();
 }

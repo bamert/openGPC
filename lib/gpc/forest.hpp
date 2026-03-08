@@ -178,7 +178,47 @@ struct MatchStats {
     double prec, rec, timeProp, timeMatch;
     int numInlier, numStates, numMatches;
 };
+struct SoAFrame {
+    // 256 Buckets to ensure each chunk fits in L2/L3 cache
+    std::vector<uint64_t> states[256];
+    std::vector<uint32_t> indices[256];
+    
+    void reserve(size_t total_size) {
+        for(int i=0; i<256; ++i) {
+            states[i].reserve(total_size / size_t(256 * 1.2));
+            indices[i].reserve(total_size / size_t(256 * 1.2));
+        }
+    }
+};
+struct SoAFramePersistent {
+    // Persistent memory blocks
+    std::vector<uint64_t> statesSlab;
+    std::vector<uint32_t> indicesSlab;
+    
+    // Pointers into the slab for each bucket
+    uint64_t* bucketStates[256];
+    uint32_t* bucketIndices[256];
+    uint32_t bucketSizes[256];
 
+    void preallocate(size_t total_size) {
+        statesSlab.assign(total_size, 0);
+        indicesSlab.assign(total_size, 0);
+    }
+};
+struct StateIdx {
+    uint64_t state;
+    uint32_t index;
+};
+
+struct SoAFramePersistentSingleSlab {
+    std::vector<StateIdx> slab; 
+    StateIdx* bucketData[256];
+    uint32_t bucketSizes[256];
+
+    void preallocate(size_t total_size) {
+        slab.assign(total_size, {0, 0});
+    }
+};
 
 class Forest {
    public:
@@ -198,9 +238,75 @@ class Forest {
         PreprocessedImage& tar,
         FilterMask& fastmask,
         InferenceSettings& settings);
-    std::vector<ndb::Correspondence> findCorrespondences(
+    static std::vector<ndb::Correspondence> findCorrespondences(
         std::vector<ndb::Descriptor>& srcStates,
         std::vector<ndb::Descriptor>& tarStates);
+    static std::vector<ndb::Correspondence> findCorrespondencesHash(
+        std::vector<ndb::Descriptor>& srcStates,
+        std::vector<ndb::Descriptor>& tarStates);
+
+    static std::vector<ndb::Correspondence> findCorrespondencesHashingRadix(
+        std::vector<ndb::Descriptor>& srcStates,
+        std::vector<ndb::Descriptor>& tarStates);
+
+    static std::vector<ndb::Correspondence> findCorrespondencesTurbo(
+        std::vector<ndb::Descriptor>& srcStates,
+        std::vector<ndb::Descriptor>& tarStates);
+
+
+    static std::pair<SoAFrame, SoAFrame> prepareSoAFrames(
+    std::vector<ndb::Descriptor>& srcStates,
+    std::vector<ndb::Descriptor>& tarStates);
+
+    static void prepareSoAFramesPersistent(
+        std::vector<ndb::Descriptor>& srcStates,
+        std::vector<ndb::Descriptor>& tarStates,
+        SoAFramePersistent& srcFrame, 
+        SoAFramePersistent& tarFrame);
+static void prepareSoAFramesPersistentSingleSlab(
+    std::vector<ndb::Descriptor>& srcStates,
+    std::vector<ndb::Descriptor>& tarStates,
+    SoAFramePersistentSingleSlab& srcFrame, 
+    SoAFramePersistentSingleSlab& tarFrame);
+
+
+static std::pair<std::vector<uint32_t>, std::vector<uint32_t>> matchPreparedFrames( SoAFrame& src, SoAFrame& tar);
+static std::pair<std::vector<uint32_t>, std::vector<uint32_t>> matchPreparedFramesFaster( SoAFrame& src, SoAFrame& tar);
+
+static std::pair<std::vector<uint32_t>, std::vector<uint32_t>> matchParallelRadixPartitioning(
+    SoAFrame& src, 
+    SoAFrame& tar) ;
+static std::pair<std::vector<uint32_t>, std::vector<uint32_t>> matchBlockedBloom(
+    SoAFrame& src, 
+    SoAFrame& tar) ;
+static std::pair<std::vector<uint32_t>, std::vector<uint32_t>> matchAdaptive(
+    SoAFrame& src, 
+    SoAFrame& tar);
+static std::pair<std::vector<uint32_t>, std::vector<uint32_t>> matchAdaptivePersistent(
+    SoAFramePersistent& src, 
+    SoAFramePersistent& tar);
+static std::pair<std::vector<uint32_t>, std::vector<uint32_t>> matchPipelinedBranchless(
+    SoAFramePersistent& src, 
+    SoAFramePersistent& tar);
+static void matchPipelinedBranchlessPreallocate(
+    SoAFramePersistent& src, 
+    SoAFramePersistent& tar,
+    std::vector<uint32_t>& resultSrc,
+    std::vector<uint32_t>& resultTar);
+
+/*
+static std::pair<std::vector<uint32_t>, std::vector<uint32_t>> matchAdaptiveNeon(
+    SoAFrame& src, 
+    SoAFrame& tar);
+*/
+static void matchPipelinedBranchlessPreallocateSingleSlab(
+    SoAFramePersistentSingleSlab& src, SoAFramePersistentSingleSlab& tar,
+    std::vector<uint32_t>& outS, std::vector<uint32_t>& outT);
+
+
+
+
+
     /**
      * @brief Evaluates a given forest mask on an image and returns the
      * descriptors

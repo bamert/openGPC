@@ -40,6 +40,16 @@ FetchContent_Declare(
   GIT_REPOSITORY https://github.com/google/benchmark.git
   GIT_TAG        v1.9.5  
 )
+# MUST go before FetchContent_MakeAvailable
+set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+set(BENCHMARK_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
+
+# Force the library itself to build in Release mode
+set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
+
+#add_definitions(-DNDEBUG) 
+
+FetchContent_MakeAvailable(google_benchmark)
 FetchContent_MakeAvailable(google_benchmark)
 add_library(gpc_core 
     lib/gpc/forest.cpp 
