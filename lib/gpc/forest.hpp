@@ -241,6 +241,9 @@ class Forest {
     static std::vector<ndb::Correspondence> findCorrespondences(
         std::vector<ndb::Descriptor>& srcStates,
         std::vector<ndb::Descriptor>& tarStates);
+    static std::vector<ndb::Correspondence> findCorrespondencesHashNaive(
+        std::vector<ndb::Descriptor>& srcStates,
+        std::vector<ndb::Descriptor>& tarStates);
     static std::vector<ndb::Correspondence> findCorrespondencesHash(
         std::vector<ndb::Descriptor>& srcStates,
         std::vector<ndb::Descriptor>& tarStates);

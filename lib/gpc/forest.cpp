@@ -53,6 +53,7 @@
 #include "gpc/kernels/utils.hpp"
 #include "gpc/hashmatch.hpp"
 #include "gpc/forest.hpp"
+#include <unordered_map>
 
 
 namespace gpc {
@@ -420,12 +421,6 @@ void Forest::matchPipelinedBranchlessPreallocate(
     SoAFramePersistent& tar,
     std::vector<uint32_t>& resultSrc,
     std::vector<uint32_t>& resultTar) {
-
-    //std::pair<std::vector<uint32_t>, std::vector<uint32_t>> result;
-    // For 100M items, we might find more matches; 
-    // adjusting reserve to prevent mid-run reallocations.
-    //result.first.reserve(src.statesSlab.size() / 100); 
-    //result.second.reserve(src.statesSlab.size() / 100);
 
     struct Slot { 
         uint64_t key; 
@@ -1140,7 +1135,52 @@ std::vector<ndb::Correspondence> Forest::findCorrespondences(
     }
     return corr;
 }
-#include <unordered_map>
+std::vector<ndb::Correspondence> Forest::findCorrespondencesHashNaive(
+    std::vector<ndb::Descriptor>& srcStates,
+    std::vector<ndb::Descriptor>& tarStates) {
+    
+    std::vector<ndb::Correspondence> corr;
+    struct DescriptorHasher {
+        std::size_t operator()(const ndb::Descriptor& d) const {
+            // Just return the state since it's already a unique-ish 64-bit int
+            return static_cast<std::size_t>(d.state);
+        }
+    };
+    // 1. Count frequencies in Source
+    std::unordered_map<ndb::Descriptor, int, DescriptorHasher> srcCounts;
+    std::unordered_map<ndb::Descriptor, int, DescriptorHasher> tarCounts;
+    for (const auto& d : srcStates) {
+        srcCounts[d]++;
+    }
+
+    // 2. Count frequencies in Target
+    for (const auto& d : tarStates) {
+        tarCounts[d]++;
+    }
+
+    // 3. Match only if the descriptor is unique in both (count == 1)
+    // We iterate through srcStates to maintain a similar "order" or 
+    // simply to find potential matches.
+    for (const auto& srcDesc : srcStates) {
+        // Is it unique in Source?
+        if (srcCounts[srcDesc] == 1) {
+            // Does it exist and is it unique in Target?
+            if (tarCounts.count(srcDesc) && tarCounts[srcDesc] == 1) {
+                
+                // We need the actual target object to get the 'point' 
+                // In a naive way, we just go find it.
+                for (const auto& tarDesc : tarStates) {
+                    if (tarDesc == srcDesc) {
+                        corr.push_back(ndb::Correspondence(srcDesc.point, tarDesc.point));
+                        break; 
+                    }
+                }
+            }
+        }
+    }
+
+    return corr;
+}
 
 // State machine for our IDs
 enum class State : uint8_t { Unseen = 0, SeenOnce = 1, Duplicate = 2 };

@@ -86,6 +86,23 @@ static void matchBySorting(
         benchmark::ClobberMemory();
     }
 }
+static void matchByHashingNaive(
+        benchmark::State& state) {
+    std::vector<ndb::Descriptor> srcOriginal = getSrcDescriptors(); 
+    std::vector<ndb::Descriptor> tarOriginal = getTarDescriptors();
+    for (auto _ : state) {
+        state.PauseTiming();
+        std::vector<ndb::Descriptor> src = srcOriginal;
+        std::vector<ndb::Descriptor> tar = tarOriginal;
+        state.ResumeTiming();
+        std::vector<ndb::Correspondence> 
+            matches = gpc::inference::Forest::findCorrespondencesHashNaive(src, tar);
+
+        state.counters["matches"] = matches.size();
+        benchmark::DoNotOptimize(matches);
+        benchmark::ClobberMemory();
+    }
+}
 static void matchByHashing(
         benchmark::State& state) {
     std::vector<ndb::Descriptor> srcOriginal = getSrcDescriptors(); 
@@ -324,6 +341,8 @@ static void matchPipelinedBranchlessPreallocateSingleSlab(
     }
 }
 BENCHMARK(matchBySorting)
+    ->Unit(benchmark::kMillisecond);
+BENCHMARK(matchByHashingNaive)
     ->Unit(benchmark::kMillisecond);
 BENCHMARK(matchByHashing)
     ->Unit(benchmark::kMillisecond);

@@ -128,7 +128,7 @@ struct Descriptor {
                 d.state = std::stoull(state_str);
                 d.srcDescr = srcDescr; 
                 
-                if (d.point.y > 200 && d.point.y < 400)
+                //if (d.point.y > 200 && d.point.y < 400)
                     result.push_back(d);
             }
         }
