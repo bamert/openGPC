@@ -701,8 +701,7 @@ std::pair<std::vector<uint32_t>, std::vector<uint32_t>> Forest::matchAdaptive(
         for (size_t i = 0; i < sStates.size(); ++i) {
             // Prefetch an element roughly 16 iterations ahead (adjust based on testing)
             /*
-             * This didn't help anymore. So either compiler already optimized this or 
-             * we are compute bound.
+             * This didn't help anymore. 
              * if (i + 16 < sStates.size()) {
                 __builtin_prefetch(&sStates[i + 16], 0, 3);
                 __builtin_prefetch(&sIdxs[i + 16], 0, 3);
@@ -1069,6 +1068,7 @@ std::vector<ndb::Correspondence> Forest::depthPriorFast(
     PreprocessedImage& tar,
     FilterMask& fastmask,
     InferenceSettings& settings) {
+    std::chrono::high_resolution_clock::time_point t0, t1;
     std::vector<ndb::Descriptor> statesSrc = evalFastMaskOnSubsetSSE(
         src.smooth, src.grad, src.mask, fastmask, settings);
     std::vector<ndb::Descriptor> statesTar = evalFastMaskOnSubsetSSE(
@@ -1081,8 +1081,12 @@ std::vector<ndb::Correspondence> Forest::depthPriorFast(
     }
     // Use sort method for matching
     if (settings.useHashtable_ == false) {
+    t0 = sysTick();
         std::vector<ndb::Correspondence> corr =
             findCorrespondences(statesSrc, statesTar);
+    t1 = sysTick();
+    std::cout << "findCorrespondences (without allocation): " << gpc::inference::tickToMs(t1, t0) << " ms" << std::endl;
+    std::cout << "length src: " << statesSrc.size() << std::endl;
         return corr;
     }
     // Use hashtable matching
@@ -1519,11 +1523,9 @@ std::vector<ndb::Correspondence> Forest::stereoMatch(PreprocessedImage& simg,
         "Targe Image: dimension does not fit dimension of supplied forest "
         "mask");
     bool m_debug = false;
-    std::chrono::high_resolution_clock::time_point t0, t1;
     // Match
     std::vector<ndb::Correspondence> corr =
         depthPriorFast(simg, timg, forestmask, settings);
-    t1 = sysTick();
 
     return corr;
 }

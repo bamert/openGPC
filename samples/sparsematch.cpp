@@ -67,4 +67,11 @@ int main(int argc, char** argv) {
     std::cout << "Number of matches: " << supp.size() << std::endl;
     std::cout << "Preprocessing time: " << gpc::inference::tickToMs(t1, t0) << " ms" << std::endl;
     std::cout << "Matching time: " << gpc::inference::tickToMs(t2, t1) << " ms" << std::endl;
+    std::vector<ndb::Descriptor> statesSrc = forest.evalFastMaskOnSubsetSSE(
+        simgP.smooth, simgP.grad, simgP.mask, fm, inferencesettings);
+    std::vector<ndb::Descriptor> statesTar = forest.evalFastMaskOnSubsetSSE(
+        timgP.smooth, timgP.grad, timgP.mask, fm, inferencesettings);
+    ndb::Descriptor::serialize("statesSrc.txt", statesSrc);
+    ndb::Descriptor::serialize("statesTar.txt", statesTar);
+
 }
