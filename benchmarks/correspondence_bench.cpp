@@ -49,13 +49,13 @@ std::vector<ndb::Descriptor> generate_pareto_ids(size_t count, double target_mea
     return ids;
 }
 std::vector<ndb::Descriptor> getSrcDescriptors() {
-    return ndb::Descriptor::deserialize("statesSrc.txt", true);
-    //return generate_pareto_ids(NUM_ELEMENTS, 1000.0, 42); // 1M IDs with mean ~1000
+    //return ndb::Descriptor::deserialize("statesSrc.txt", true);
+    return generate_pareto_ids(NUM_ELEMENTS, 1000.0, 42); // 1M IDs with mean ~1000
 }
 
 std::vector<ndb::Descriptor> getTarDescriptors() {
-    return ndb::Descriptor::deserialize("statesTar.txt", false);
-    //return generate_pareto_ids(NUM_ELEMENTS, 1001.0, 42); // 1M IDs with mean ~1000
+    //return ndb::Descriptor::deserialize("statesTar.txt", false);
+    return generate_pareto_ids(NUM_ELEMENTS, 1001.0, 42); // 1M IDs with mean ~1000
 }
 std::vector<ndb::Descriptor> generate_unique_ids(size_t count) {
     std::vector<ndb::Descriptor> ids;
@@ -340,11 +340,44 @@ static void matchPipelinedBranchlessPreallocateSingleSlab(
         benchmark::ClobberMemory();
     }
 }
+static void matchPipelinedBranchlessPreallocateSingleSlabUnordered(
+        benchmark::State& state) {
+    std::vector<ndb::Descriptor> srcOriginal = getSrcDescriptors(); 
+    std::vector<ndb::Descriptor> tarOriginal = getTarDescriptors();
+                                                    
+    gpc::inference::SoAFramePersistentSingleSlab srcFrame, tarFrame;
+    srcFrame.preallocate(srcOriginal.size()); // size known
+    tarFrame.preallocate(tarOriginal.size());
+    std::vector<uint32_t> resultSrc, resultTar;
+    resultSrc.reserve(srcOriginal.size()/10);
+    resultTar.reserve(tarOriginal.size()/10);
+    for (auto _ : state) {
+        state.PauseTiming();
+        resultSrc.clear();
+        resultTar.clear();
+        // 1. Measure Prepare
+        // 2M: 5.7ms, 20M: 57ms
+        std::vector<ndb::Descriptor> src = srcOriginal;
+        std::vector<ndb::Descriptor> tar = tarOriginal;
+        state.ResumeTiming();
+        gpc::inference::Forest::prepareSoAFramesPersistentSingleSlabUnordered(src, tar, srcFrame, tarFrame);
+
+        // 2. Measure Match
+        // 2M: 5.3ms , 20M: 53ms
+        gpc::inference::Forest::matchPipelinedBranchlessPreallocateSingleSlabUnordered(srcFrame, tarFrame, resultSrc, resultTar);
+
+        state.counters["matches"] = resultSrc.size();
+        
+        benchmark::DoNotOptimize(resultSrc);
+        benchmark::DoNotOptimize(resultTar);
+        benchmark::ClobberMemory();
+    }
+}
 BENCHMARK(matchBySorting)
     ->Unit(benchmark::kMillisecond);
-BENCHMARK(matchByHashingNaive)
-    ->Unit(benchmark::kMillisecond);
 BENCHMARK(matchByHashing)
+    ->Unit(benchmark::kMillisecond);
+BENCHMARK(matchByHashingNaive)
     ->Unit(benchmark::kMillisecond);
 BENCHMARK(matchPreparedFrames)
     ->Unit(benchmark::kMillisecond);
@@ -368,5 +401,7 @@ BENCHMARK(matchPipelinedBranchless)
 BENCHMARK(matchPipelinedBranchlessPreallocate)
     ->Unit(benchmark::kMillisecond);
 BENCHMARK(matchPipelinedBranchlessPreallocateSingleSlab)
+    ->Unit(benchmark::kMillisecond);
+BENCHMARK(matchPipelinedBranchlessPreallocateSingleSlabUnordered)
     ->Unit(benchmark::kMillisecond);
 BENCHMARK_MAIN();

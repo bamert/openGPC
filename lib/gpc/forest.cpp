@@ -58,6 +58,110 @@
 
 namespace gpc {
 namespace inference {
+void Forest::prepareSoAFramesPersistentSingleSlabUnordered(
+    std::vector<ndb::Descriptor>& srcStates,
+    std::vector<ndb::Descriptor>& tarStates,
+    SoAFramePersistentSingleSlab& srcFrame, 
+    SoAFramePersistentSingleSlab& tarFrame) {
+
+    uint32_t srcCounts[256] = {0}, tarCounts[256] = {0};
+    for (const auto& s : srcStates) {
+        srcCounts[s.state & 0xFF]++;
+    }
+    for (const auto& t : tarStates) {
+        tarCounts[t.state & 0xFF]++;
+    }
+
+    StateIdx* sP = srcFrame.slab.data();
+    StateIdx* tP = tarFrame.slab.data();
+    for (int i = 0; i < 256; ++i) {
+        srcFrame.bucketData[i] = sP;
+        srcFrame.bucketSizes[i] = srcCounts[i];
+        tarFrame.bucketData[i] = tP;
+        tarFrame.bucketSizes[i] = tarCounts[i];
+        sP += srcCounts[i]; tP += tarCounts[i];
+    }
+
+    uint32_t sW[256] = {0}, tW[256] = {0};
+    // FIX: Split into two independent loops
+    for (uint32_t i = 0; i < (uint32_t)srcStates.size(); ++i) {
+        uint64_t sv = srcStates[i].state;
+        srcFrame.bucketData[sv & 0xFF][sW[sv & 0xFF]++] = {sv, i};
+    }
+    for (uint32_t i = 0; i < (uint32_t)tarStates.size(); ++i) {
+        uint64_t tv = tarStates[i].state;
+        tarFrame.bucketData[tv & 0xFF][tW[tv & 0xFF]++] = {tv, i};
+    }
+}
+void Forest::matchPipelinedBranchlessPreallocateSingleSlabUnordered(
+    SoAFramePersistentSingleSlab& src, SoAFramePersistentSingleSlab& tar,
+    std::vector<uint32_t>& outS, std::vector<uint32_t>& outT) {
+
+    struct Slot { 
+        uint64_t key;   
+        uint32_t idx;   
+        uint32_t gen;   
+        uint32_t count; 
+        uint32_t outIdx; // FIX: Track where the match was written in the output vectors
+    };
+    static std::vector<Slot> table(16384, {0, 0, 0, 0, 0});
+    static uint32_t currentGen = 1;
+
+    for (int b = 0; b < 256; ++b) {
+        StateIdx* sData = src.bucketData[b];
+        uint32_t  sSize = src.bucketSizes[b];
+        if (sSize == 0) continue;
+
+        const uint32_t mask = (sSize < 1000) ? 2047 : 16383;
+        const uint32_t shift = (sSize < 1000) ? 53 : 50;
+        currentGen++;
+
+        for (uint32_t i = 0; i < sSize; ++i) {
+            uint64_t k = sData[i].state;
+            uint32_t h = (k * 11400714819323198485llu) >> shift;
+            h &= mask;
+            while (table[h].gen == currentGen && table[h].key != k) h = (h + 1) & mask;
+            if (table[h].gen != currentGen) table[h] = {k, sData[i].index, currentGen, 1, 0};
+            else table[h].count++;
+        }
+
+        StateIdx* tData = tar.bucketData[b];
+        uint32_t  tSize = tar.bucketSizes[b];
+        for (uint32_t i = 0; i < tSize; ++i) {
+            uint64_t k = tData[i].state;
+            uint32_t h = (k * 11400714819323198485llu) >> shift;
+            h &= mask;
+            while (table[h].gen == currentGen && table[h].key != k) h = (h + 1) & mask;
+
+            if (table[h].gen == currentGen && table[h].key == k) {
+                if (table[h].count == 1) {
+                    // Unique source, first target match
+                    table[h].outIdx = outS.size(); // Remember the index
+                    outS.push_back(table[h].idx);
+                    outT.push_back(tData[i].index);
+                    table[h].count = 0xFFFFFFFF; // Mark as matched once
+                } else if (table[h].count == 0xFFFFFFFF) {
+                    // Duplicate target found! Invalidate the previously written match.
+                    outS[table[h].outIdx] = 0xFFFFFFFF; 
+                    outT[table[h].outIdx] = 0xFFFFFFFF;
+                    table[h].count = 0xEEEEEEEE; // Mark as ruined
+                }
+            }
+        }
+    }
+
+    // FIX: Final compaction pass to remove invalidated matches (sentinels)
+    uint32_t validCount = 0;
+    for (size_t i = 0; i < outS.size(); ++i) {
+        if (outS[i] != 0xFFFFFFFF) {
+            outS[validCount] = outS[i];
+            outT[validCount] = outT[i];
+            validCount++;
+        }
+    }
+    outS.resize(validCount);
+    outT.resize(validCount);
+}
 void Forest::prepareSoAFramesPersistentSingleSlab(
     std::vector<ndb::Descriptor>& srcStates,
     std::vector<ndb::Descriptor>& tarStates,

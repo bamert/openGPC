@@ -308,6 +308,14 @@ static void matchPipelinedBranchlessPreallocateSingleSlab(
 
 
 
+static void prepareSoAFramesPersistentSingleSlabUnordered(
+    std::vector<ndb::Descriptor>& srcStates,
+    std::vector<ndb::Descriptor>& tarStates,
+    SoAFramePersistentSingleSlab& srcFrame, 
+    SoAFramePersistentSingleSlab& tarFrame);
+static void matchPipelinedBranchlessPreallocateSingleSlabUnordered(
+    SoAFramePersistentSingleSlab& src, SoAFramePersistentSingleSlab& tar,
+    std::vector<uint32_t>& outS, std::vector<uint32_t>& outT);
 
 
     /**
