@@ -6,6 +6,7 @@ project(openGPC CXX)
 set (REQ_CPP11_FEATURES  cxx_strong_enums cxx_auto_type)
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+  add_compile_options(-O3 -funroll-loops)
 endif()
 
 set(CMAKE_CXX_STANDARD 17) 

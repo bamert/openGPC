@@ -59,9 +59,12 @@ void sobelNaive(
     // boundary) (unoptimized)
     for (int iy = 1; iy < height - 1; iy++) {
         for (int ix = 0; ix < width; ix++) {
-            int sx = (*p11 + *p31 + 2 * *p21 - *p13 - 2 * *p23 - *p33) / 9;
-            int sy = (*p11 + *p13 + 2 * *p12 - *p31 - 2 * *p32 - *p33) / 9;
+            // Approximate division by 9 with fixed-point multiplication (2^16/9 = 7282)
+            int16_t sum_x = (*p11 + *p31 + 2 * *p21 - *p13 - 2 * *p23 - *p33);
+            int16_t sum_y = (*p11 + *p13 + 2 * *p12 - *p31 - 2 * *p32 - *p33);
 
+            int sx = (static_cast<int32_t>(sum_x) * 7282) >> 16;
+            int sy = (static_cast<int32_t>(sum_y) * 7282) >> 16;
             int val = sx * sx + sy * sy;
 
             *optr = val > thresholdSq ? 255 : 0;
