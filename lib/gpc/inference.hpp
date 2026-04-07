@@ -48,8 +48,11 @@
 #include "gpc/SintelOpticalFlow.hpp"
 #include "gpc/SintelStereo.hpp"
 #include "gpc/buffer.hpp"
-#include "gpc/filter.hpp"
 #include "gpc/hashmatch.hpp"
+#include "gpc/kernels/box.hpp"
+#include "gpc/kernels/gpc.hpp"
+#include "gpc/kernels/sobel.hpp"
+#include "gpc/kernels/utils.hpp"
 
 /**
  * @brief      The inference class of the GPC forest
@@ -295,8 +298,7 @@ class Forest {
                            fastmask.mask,
                            idx,
                            img.cols(),
-                           img.rows(),
-                           settings.numThreads_);
+                           img.rows());
         } else {
             ndb::gpcFilterTau(img.data(),
                               grad.data(),
@@ -305,8 +307,7 @@ class Forest {
                               fastmask.tau,
                               idx,
                               img.cols(),
-                              img.rows(),
-                              settings.numThreads_);
+                              img.rows());
         }
         std::vector<ndb::Descriptor> out(idx.size());
         int j = 0;
@@ -465,7 +466,6 @@ class Forest {
         int numFerns;
         int type;
         ff >> numFerns;
-        cout << "number of ferns:" << numFerns << endl;
         for (int i = 0; i < numFerns; i++) {
             int fernID, numTests;
             std::string fernScale;

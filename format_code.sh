@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-EXPECTED_VERSION="21.1.5"
+EXPECTED_VERSION="21.1.8"
 root_folder=$(git rev-parse --show-toplevel)
 
 change_in_place=false

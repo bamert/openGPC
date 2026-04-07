@@ -33,6 +33,10 @@
 #include <png.h>
 
 #include <Eigen/Dense>
+#include <fstream>
+#include <iostream>
+#include <sstream>
+#include <string>
 #include <type_traits>
 #include <vector>
 
@@ -80,6 +84,58 @@ struct Descriptor {
     bool operator<(const Descriptor& d) const { return state < d.state; }
     bool operator<=(const Descriptor& d) const { return state <= d.state; }
     int operator%(const int& d) const { return state % d; }
+    static void serialize(const std::string& filename,
+                          const std::vector<Descriptor>& data) {
+        std::ofstream outFile(filename);
+        if (!outFile.is_open()) {
+            std::cerr << "Error opening file for writing: " << filename
+                      << std::endl;
+            return;
+        }
+
+        for (const auto& desc : data) {
+            outFile << desc.point.x << "," << desc.point.y << "," << desc.state
+                    << "\n";
+        }
+        outFile.close();
+    }
+
+    /**
+     * Deserializes a CSV file back into a vector of Descriptors.
+     */
+    static std::vector<Descriptor> deserialize(const std::string& filename,
+                                               bool srcDescr) {
+        std::vector<Descriptor> result;
+        std::ifstream inFile(filename);
+        if (!inFile.is_open()) {
+            std::cerr << "Error opening file for reading: " << filename
+                      << std::endl;
+            return result;
+        }
+
+        std::string line;
+        while (std::getline(inFile, line)) {
+            if (line.empty()) continue;
+
+            std::stringstream ss(line);
+            std::string x_str, y_str, state_str;
+
+            // Split by comma
+            if (std::getline(ss, x_str, ',') && std::getline(ss, y_str, ',') &&
+                std::getline(ss, state_str, ',')) {
+                Descriptor d;
+                d.point.x = std::stod(x_str);
+                d.point.y = std::stod(y_str);
+                d.state = std::stoull(state_str);
+                d.srcDescr = srcDescr;
+
+                // if (d.point.y > 200 && d.point.y < 400)
+                result.push_back(d);
+            }
+        }
+        inFile.close();
+        return result;
+    }
 };
 // Keeps support points with associated disparity
 // Support points are only used in the left image
@@ -896,7 +952,7 @@ class RGBBuffer : public Buffer<RGBColor> {
         free(rowPointers);
     }
 };
-Buffer<RGBColor> getDisparityVisualization(
+inline Buffer<RGBColor> getDisparityVisualization(
     ndb::Buffer<uint8_t>& srcImg,
     std::vector<int>& validEstimateIndices,
     ndb::Buffer<float>& disparity) {
@@ -969,8 +1025,8 @@ Buffer<RGBColor> getDisparityVisualization(
     }
     return dispVis;
 }
-Buffer<RGBColor> getDisparityVisualization(ndb::Buffer<uint8_t>& srcImg,
-                                           std::vector<Support>& support) {
+inline Buffer<RGBColor> getDisparityVisualization(
+    ndb::Buffer<uint8_t>& srcImg, std::vector<Support>& support) {
     float min_disparity = 0;
     float max_disparity = 128;
     Buffer<RGBColor> dispVis(Eigen::Vector2i(srcImg.width, srcImg.rows()));

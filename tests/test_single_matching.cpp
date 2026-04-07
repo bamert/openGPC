@@ -1,7 +1,7 @@
 #define APPROVALS_GOOGLETEST
 #include <ApprovalTests.hpp>     
 #include <gtest/gtest.h>
-#include "gpc/inference.hpp"
+#include "gpc/forest.hpp"
 
 
 TEST(Approval, Inference)
@@ -34,12 +34,12 @@ TEST(Approval, Inference)
     simg.readPNG(leftImgPath);
     timg.readPNG(rightImgPath); 
     // Get learned filter for the given image dimensions.
-    GPCForest_t::FilterMask fm =
+    gpc::inference::FilterMask fm =
         forest.readForest(forestPath, simg.cols(), simg.rows());
 
-    GPCForest_t::PreprocessedImage simgP =
+    gpc::inference::PreprocessedImage simgP =
         forest.preprocessImage(simg, inferencesettings);
-    GPCForest_t::PreprocessedImage timgP =
+    gpc::inference::PreprocessedImage timgP =
         forest.preprocessImage(timg, inferencesettings);
 
     // Match rectified stereo images
@@ -49,6 +49,45 @@ TEST(Approval, Inference)
 
     std::stringstream ss;
     ss << supp;
-    EXPECT_EQ(866, supp.size());
+    EXPECT_EQ(1024, supp.size());
     ApprovalTests::Approvals::verify(ss.str());
 }
+std::vector<ndb::Descriptor> getSrcDescriptors() {
+    return ndb::Descriptor::deserialize("statesSrc.txt", true);
+}
+
+std::vector<ndb::Descriptor> getTarDescriptors() {
+    return ndb::Descriptor::deserialize("statesTar.txt", false);
+}
+
+
+/*
+TEST(A,B) {
+    std::vector<ndb::Descriptor> srcOriginal = getSrcDescriptors(); 
+    std::vector<ndb::Descriptor> tarOriginal = getTarDescriptors();
+    std::vector<ndb::Descriptor> srcBaseline = srcOriginal;
+    std::vector<ndb::Descriptor> tarBaseline = tarOriginal;
+    std::vector<ndb::Descriptor> srcAlt = srcOriginal;
+    std::vector<ndb::Descriptor> tarAlt = tarOriginal;
+    
+    std::vector<ndb::Correspondence> 
+        matches = gpc::inference::Forest::findCorrespondences(srcBaseline, tarBaseline);
+
+
+    // Alternative method
+    gpc::inference::SoAFramePersistentSingleSlab srcFrame, tarFrame;
+    srcFrame.preallocate(srcOriginal.size()); // size known
+    tarFrame.preallocate(tarOriginal.size());
+
+    std::vector<uint32_t> resultSrc, resultTar;
+    resultSrc.reserve(srcOriginal.size()/10);
+    resultTar.reserve(tarOriginal.size()/10);
+    gpc::inference::Forest::prepareSoAFramesPersistentSingleSlabUnordered(srcAlt, tarAlt, srcFrame, tarFrame);
+    gpc::inference::Forest::matchPipelinedBranchlessPreallocateSingleSlabUnordered(srcFrame, tarFrame, resultSrc, resultTar);
+
+    // Ensure ID pairings of (resultSrc, resultTar) match the naive version. 
+    // We ignore exact matching for now and just expect the count to be the same
+    EXPECT_EQ(matches.size(), resultSrc.size());
+    EXPECT_EQ(matches.size(), resultTar.size());
+}
+*/

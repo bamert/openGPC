@@ -11,8 +11,22 @@ FetchContent_MakeAvailable(approvaltests)
 
 
 find_package(GTest REQUIRED)
-add_executable(test_single_matching test_single_matching.cpp)
-target_link_libraries(test_single_matching PRIVATE ${PNG_LIBRARIES} ApprovalTests::ApprovalTests GTest::gtest_main)
+function(add_gpc_approval_test TEST_NAME SOURCE_FILE)
+    add_executable(${TEST_NAME} ${SOURCE_FILE})
+    
+    target_link_libraries(${TEST_NAME} 
+        PRIVATE 
+            gpc_core 
+            ApprovalTests::ApprovalTests 
+            GTest::gtest_main
+    )
+    
 
-add_test(NAME single_matching COMMAND test_single_matching)
+    add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
+endfunction()
+
+add_gpc_approval_test(test_single_matching test_single_matching.cpp)
+add_gpc_approval_test(test_kernel_box test_kernel_box.cpp)
+add_gpc_approval_test(test_kernel_sobel test_kernel_sobel.cpp)
+add_gpc_approval_test(test_kernel_gpc test_kernel_gpc.cpp)
 
