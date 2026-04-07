@@ -182,7 +182,7 @@ namespace testing {
 //#if defined(HWY_TARGET) && HWY_TARGET == HWY_NEON
     void sobel_hwy(uint8_t* in, uint8_t* blurred, int width, int height, uint8_t threshold) {
         //ndb::N_NEON::SobelKernel(in, blurred, width, height, threshold);
-        HWY_STATIC_DISPATCH(SobelKernel)(in, blurred, width, height, threshold);
+        HWY_STATIC_DISPATCH(SobelKernelNoDiv)(in, blurred, width, height, threshold);
     }
 //#endif  
 }
