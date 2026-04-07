@@ -3,7 +3,30 @@
 
 #include "gpc/forest.hpp"
 using namespace std;
-
+std::vector<ndb::Descriptor> gpcFilterDense(uint8_t* in,
+                    const std::vector<int32_t>& fastmask,
+                    int width,
+                    int height) {
+    uint32_t tmp;
+    uint32_t usableW = width - 26;
+    uint32_t usableH = height - 26;
+    std::vector<ndb::Descriptor> out(usableW * usableH);
+    int j = 0;
+    for (int y=13;y<height-13;y++) {
+        for (int x=13;x<width-13;x++) {
+            tmp = 0;
+            int idx = y * width + x; 
+            for (size_t i = 0; i < fastmask.size(); i += 2) {
+                tmp <<= 1;  // shift by one
+                if (*(in + idx + fastmask[i]) > *(in + idx + fastmask[i + 1]))
+                    tmp++;  // set this test's result to 1
+            }
+            out[j] = ndb::Descriptor(ndb::Point(x, y), tmp);
+            j++;
+        }
+    }
+    return out;
+}
 int main(int argc, char** argv) {
     std::string forestPath = "../forests/defaultZeroForest.txt";
     std::string leftImgPath = "../data/middlebury/im0.png";
@@ -67,11 +90,17 @@ int main(int argc, char** argv) {
     std::cout << "Number of matches: " << supp.size() << std::endl;
     std::cout << "Preprocessing time: " << gpc::inference::tickToMs(t1, t0) << " ms" << std::endl;
     std::cout << "Matching time: " << gpc::inference::tickToMs(t2, t1) << " ms" << std::endl;
+    /*
     std::vector<ndb::Descriptor> statesSrc = forest.evalFastMaskOnSubsetSSE(
         simgP.smooth, simgP.grad, simgP.mask, fm, inferencesettings);
     std::vector<ndb::Descriptor> statesTar = forest.evalFastMaskOnSubsetSSE(
         timgP.smooth, timgP.grad, timgP.mask, fm, inferencesettings);
-    ndb::Descriptor::serialize("statesSrc.txt", statesSrc);
-    ndb::Descriptor::serialize("statesTar.txt", statesTar);
+    */
+
+    std::vector<ndb::Descriptor> statesSrc = gpcFilterDense(simgP.smooth.data(), fm.mask, simgP.smooth.cols(), simgP.smooth.rows());
+    std::vector<ndb::Descriptor> statesTar = gpcFilterDense(timgP.smooth.data(), fm.mask, timgP.smooth.cols(), timgP.smooth.rows());
+
+    ndb::Descriptor::serialize("statesSrcLargeS.txt", statesSrc);
+    ndb::Descriptor::serialize("statesTarLargeS.txt", statesTar);
 
 }

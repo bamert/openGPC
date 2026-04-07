@@ -40,7 +40,7 @@ static void BM_SobelNaive(benchmark::State& state) {
 
     state.SetLabel("naive");    
     for (auto _ : state) {
-        ndb::sobelNaive(in.data(), out.data(), w, h, 1);
+        ndb::sobelNaive(in.data(), out.data(), w, h, 50);
         
         // Ensure the compiler doesn't skip the work
         benchmark::DoNotOptimize(out.data());

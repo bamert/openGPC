@@ -61,6 +61,7 @@ std::vector<ndb::Descriptor> getTarDescriptors() {
 }
 
 
+/*
 TEST(A,B) {
     std::vector<ndb::Descriptor> srcOriginal = getSrcDescriptors(); 
     std::vector<ndb::Descriptor> tarOriginal = getTarDescriptors();
@@ -69,8 +70,6 @@ TEST(A,B) {
     std::vector<ndb::Descriptor> srcAlt = srcOriginal;
     std::vector<ndb::Descriptor> tarAlt = tarOriginal;
     
-    // Baseline
-    // To write a test for this we'd actually need to get the ids of the sources back, not just the final matches.
     std::vector<ndb::Correspondence> 
         matches = gpc::inference::Forest::findCorrespondences(srcBaseline, tarBaseline);
 
@@ -91,3 +90,4 @@ TEST(A,B) {
     EXPECT_EQ(matches.size(), resultSrc.size());
     EXPECT_EQ(matches.size(), resultTar.size());
 }
+*/

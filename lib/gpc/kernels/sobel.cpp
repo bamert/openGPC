@@ -161,7 +161,6 @@ void sobel(uint8_t* in,
            int numThreads) {
     assert(width % 16 == 0 && "width must be multiple of 16!");
 #if defined(__ARM_NEON) || defined(__aarch64__)
-    // Force use of our new Highway kernel on Mac
         sobelNaive(in, blurred, width, height, threshold);
     //testing::sobel_hwy(in, blurred, width, height, threshold); // not exact!
 #else
