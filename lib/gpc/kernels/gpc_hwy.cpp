@@ -34,8 +34,6 @@ void GPCKernel(const uint8_t* HWY_RESTRICT in,
         for (int x = border; x <= width - border - (int)N; x += N) {
             const int k = row_base + x;
 
-            // We use four 8-bit registers to build the 32 bits.
-            // This keeps the entire hot-loop in 8-bit space.
             auto v_acc0 = hn::Zero(d8);  // Bits 0-7
             auto v_acc1 = hn::Zero(d8);  // Bits 8-15
             auto v_acc2 = hn::Zero(d8);  // Bits 16-23
@@ -73,12 +71,7 @@ void GPCKernel(const uint8_t* HWY_RESTRICT in,
                 v_acc3 = hn::Or(v_acc3, hn::IfThenElse(mask, v_one8, v_zero8));
             }
 
-            // Final Assembly: Promote the four 8-bit chunks into 32-bit
-            // results. We use PromoteUpper/Lower to widen the data. N is the
-            // number of 8-bit lanes. We need to store N/4 results in d32.
-
-            // To be perfectly safe across all Highway targets, we extract and
-            // combine:
+            //extract and combine:
             for (size_t lane = 0; lane < N; ++lane) {
                 uint32_t final_val =
                     (uint32_t(hn::ExtractLane(v_acc0, lane)) << 24) |
@@ -110,10 +103,10 @@ void GPCKerneli(const uint8_t* HWY_RESTRICT in,
         for (int x = 0; x < width; x += N) {
             const uint8_t* centerGrad = grad + y * width + x;
 
-            // 1. Load the gradient bytes for the current N lanes
+            // Load the gradient bytes for the current N lanes
             auto v_grad = hn::LoadU(d8_n, centerGrad);
 
-            // 2. Promotion-free zero check
+            // Promotion-free zero check
             if (hn::AllTrue(d8_n, hn::Eq(v_grad, hn::Zero(d8_n)))) {
                 continue;
             }
@@ -123,7 +116,6 @@ void GPCKerneli(const uint8_t* HWY_RESTRICT in,
             for (size_t i = 0; i < fastmask.size(); i += 2) {
                 v_tmp = hn::ShiftLeft<1>(v_tmp);
 
-                // 3. The "Promotion" that actually works on all platforms:
                 // Promote N lanes of uint8 to N lanes of uint32
                 auto v1 = hn::PromoteTo(
                     d32, hn::LoadU(d8_n, in + y * width + x + fastmask[i]));

@@ -48,8 +48,6 @@ set(BENCHMARK_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
 # Force the library itself to build in Release mode
 set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
 
-#add_definitions(-DNDEBUG) 
-
 FetchContent_MakeAvailable(google_benchmark)
 FetchContent_MakeAvailable(google_benchmark)
 add_library(gpc_core 

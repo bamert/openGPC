@@ -24,7 +24,6 @@ std::vector<ndb::Descriptor> generate_pareto_ids(size_t count, double target_mea
     // 1e-9 epsilon prevents division by zero/infinity
     std::uniform_real_distribution<double> dist(1e-9, 1.0);
 
-    // Alpha = 1.16 provides a classic "80/20" Pareto distribution
     const double alpha = 1.16; 
     const double xm = target_mean * (alpha - 1.0) / alpha;
 

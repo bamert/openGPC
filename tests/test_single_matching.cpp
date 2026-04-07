@@ -49,7 +49,7 @@ TEST(Approval, Inference)
 
     std::stringstream ss;
     ss << supp;
-    EXPECT_EQ(866, supp.size());
+    EXPECT_EQ(1024, supp.size());
     ApprovalTests::Approvals::verify(ss.str());
 }
 std::vector<ndb::Descriptor> getSrcDescriptors() {

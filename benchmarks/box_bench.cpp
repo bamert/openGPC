@@ -7,11 +7,9 @@ static void BM_BoxHighway(benchmark::State& state) {
     std::vector<uint8_t> in(w * h, 128);
     std::vector<uint8_t> out(w * h, 0);
     state.SetLabel(hwy::TargetName(HWY_TARGET));    
-    // Warmup is handled automatically by the library
     for (auto _ : state) {
         ndb::testing::box_hwy(in.data(), out.data(), w, h);
         
-        // Ensure the compiler doesn't skip the work
         benchmark::DoNotOptimize(out.data());
         benchmark::ClobberMemory();
     }
@@ -27,7 +25,6 @@ static void BM_BoxLegacySIMD(benchmark::State& state) {
     for (auto _ : state) {
         ndb::boxSSE(in.data(), out.data(), w, h);
         
-        // Ensure the compiler doesn't skip the work
         benchmark::DoNotOptimize(out.data());
         benchmark::ClobberMemory();
     }
@@ -42,7 +39,6 @@ static void BM_BoxNaive(benchmark::State& state) {
     for (auto _ : state) {
         ndb::boxNaive(in.data(), out.data(), w, h);
         
-        // Ensure the compiler doesn't skip the work
         benchmark::DoNotOptimize(out.data());
         benchmark::ClobberMemory();
     }
