@@ -181,7 +181,7 @@ OptimizerSettings TauOptimizer(int taulo,
  */
 OptimizerSettings ZeroOptimizer(int numResamples,
                                 bool onlyScoreNonSplitSamples,
-                                double w1) ;
+                                double w1);
 struct FernSettings {
     const int maxDepth;
     const int scale;
@@ -227,7 +227,7 @@ class Fern {
                    OptimizerSettings optsetting,
                    int scoreUntilLevel,
                    splitStats& s);
-     /**
+    /**
      * @brief      Mark those samples in the set as "split" if they have been
      *             correctly classified(ref=pos and pos!=neg) with the parameter
      * set in params
@@ -238,7 +238,7 @@ class Fern {
      */
     void markSplitSamples(std::vector<GPCTriplet_t>& data,
                           std::vector<SplitParams_t>& params,
-                          int numParams) ;
+                          int numParams);
     /**
      * @brief Reset the mark on the training samples on whether they have been
      * split correctly or not Since we do not operate on copies of the training
@@ -247,7 +247,7 @@ class Fern {
      * @param data
      */
     void resetMarkOnSamples(std::vector<GPCTriplet_t>& data);
-   
+
     /**
      * @brief Train a fern given a set of training data and some optimizer
      * settings
@@ -256,8 +256,8 @@ class Fern {
      * @param optsetting      the optimizer settings
      */
     void train(std::vector<GPCTriplet_t>& trainingSamples,
-               OptimizerSettings optsetting) ;
-   
+               OptimizerSettings optsetting);
+
     /**
      * @brief      Returns the decision of the first five levels of the ferns
      *
@@ -284,7 +284,10 @@ class Fern {
  *
  * @return
  */
-inline std::vector<Fern> FernFactory(int num_S, int num_M, int num_L, int maxDepth) {
+inline std::vector<Fern> FernFactory(int num_S,
+                                     int num_M,
+                                     int num_L,
+                                     int maxDepth) {
     std::vector<Fern> ferns;
     for (int i = 0; i < num_S; i++)
         ferns.push_back(Fern(FernSettings(maxDepth, 2)));

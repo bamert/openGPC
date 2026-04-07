@@ -96,10 +96,10 @@ class Feature {
      * @param[in]  trip    The triplet
      */
     void getDecisions(bool& ref,
-                             bool& pos,
-                             bool& neg,
-                             params& params,
-                             const GPCPatchTriplet& trip);
+                      bool& pos,
+                      bool& neg,
+                      params& params,
+                      const GPCPatchTriplet& trip);
 
     Feature();
     /**
@@ -138,8 +138,7 @@ class Feature {
      * @param path The path where we'd like to store the training data
      *             in binary form.
      */
-    void storeAllTriplets(std::vector<GPCPatchTriplet>& data,
-                          std::string path);
+    void storeAllTriplets(std::vector<GPCPatchTriplet>& data, std::string path);
     /**
      * @brief Read triplets of training data from a binary file
      *        written by the storeAllTriplets method.

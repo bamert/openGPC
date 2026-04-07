@@ -1,4 +1,5 @@
 #include <hwy/highway.h>
+
 #include <iostream>
 int main() {
     std::cout << "Compiled for: " << hwy::TargetName(HWY_TARGET) << std::endl;

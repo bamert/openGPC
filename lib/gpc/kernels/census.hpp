@@ -45,7 +45,6 @@ namespace ndb {
  */
 void census5x5Naive(uint8_t* in, uint32_t* census, int width, int height);
 
-
 /**
  * @brief 5x5 dense census transform of input image. binary codes are returned
  * as a 32bit image
@@ -57,5 +56,5 @@ void census5x5Naive(uint8_t* in, uint32_t* census, int width, int height);
  */
 void census5x5(uint8_t* in, uint32_t* census, int width, int height);
 
-}
+}  // namespace ndb
 #endif

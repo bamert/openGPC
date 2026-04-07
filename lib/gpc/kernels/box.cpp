@@ -30,11 +30,13 @@
 // Code Author: Niklaus Bamert (bamertn@ethz.ch)
 
 #include "gpc/kernels/box.hpp"
-#include "gpc/kernels/utils.hpp"
+
 #include <cassert>
+
+#include "gpc/kernels/utils.hpp"
 namespace ndb {
-namespace testing { 
-    void box_hwy(uint8_t* in, uint8_t* blurred, int width, int height); 
+namespace testing {
+void box_hwy(uint8_t* in, uint8_t* blurred, int width, int height);
 }
 void boxNaive(uint8_t* in, uint8_t* blurred, int width, int height) {
     assert(width % 16 == 0 && "width must be multiple of 16!");
@@ -83,12 +85,12 @@ void boxNaive(uint8_t* in, uint8_t* blurred, int width, int height) {
 void boxSSE(uint8_t* in, uint8_t* blurred, int width, int height) {
     int start = 1;
     int end = height - 3;
-    
+
     int x, y;
-    __m128i one_third = _mm_set1_epi16(21846); // 2^16/3 + 1
-    
-    __m128i *dst0 = (__m128i*)(blurred + width * start);
-    __m128i *dst1 = (__m128i*)(blurred + width * (start + 1));
+    __m128i one_third = _mm_set1_epi16(21846);  // 2^16/3 + 1
+
+    __m128i* dst0 = (__m128i*)(blurred + width * start);
+    __m128i* dst1 = (__m128i*)(blurred + width * (start + 1));
 
     for (y = start; y < end; y += 2) {
         const uint8_t *row0, *row1, *row2, *row3;
@@ -111,8 +113,10 @@ void boxSSE(uint8_t* in, uint8_t* blurred, int width, int height) {
             unpack8to16(s00, a00, b00);
             unpack8to16(s01, a01, b01);
             unpack8to16(s02, a02, b02);
-            ra00 = _mm_mulhi_epi16(_mm_adds_epi16(_mm_adds_epi16(a00, a01), a02), one_third);
-            rb00 = _mm_mulhi_epi16(_mm_adds_epi16(_mm_adds_epi16(b00, b01), b02), one_third);
+            ra00 = _mm_mulhi_epi16(
+                _mm_adds_epi16(_mm_adds_epi16(a00, a01), a02), one_third);
+            rb00 = _mm_mulhi_epi16(
+                _mm_adds_epi16(_mm_adds_epi16(b00, b01), b02), one_third);
 
             // Row 1 Processing
             s00 = _mm_loadu_si128((__m128i*)(row1 - 1));
@@ -121,8 +125,10 @@ void boxSSE(uint8_t* in, uint8_t* blurred, int width, int height) {
             unpack8to16(s00, a00, b00);
             unpack8to16(s01, a01, b01);
             unpack8to16(s02, a02, b02);
-            ra01 = _mm_mulhi_epi16(_mm_adds_epi16(_mm_adds_epi16(a00, a01), a02), one_third);
-            rb01 = _mm_mulhi_epi16(_mm_adds_epi16(_mm_adds_epi16(b00, b01), b02), one_third);
+            ra01 = _mm_mulhi_epi16(
+                _mm_adds_epi16(_mm_adds_epi16(a00, a01), a02), one_third);
+            rb01 = _mm_mulhi_epi16(
+                _mm_adds_epi16(_mm_adds_epi16(b00, b01), b02), one_third);
 
             // Row 2 Processing
             s00 = _mm_loadu_si128((__m128i*)(row2 - 1));
@@ -131,12 +137,16 @@ void boxSSE(uint8_t* in, uint8_t* blurred, int width, int height) {
             unpack8to16(s00, a00, b00);
             unpack8to16(s01, a01, b01);
             unpack8to16(s02, a02, b02);
-            ra02 = _mm_mulhi_epi16(_mm_adds_epi16(_mm_adds_epi16(a00, a01), a02), one_third);
-            rb02 = _mm_mulhi_epi16(_mm_adds_epi16(_mm_adds_epi16(b00, b01), b02), one_third);
+            ra02 = _mm_mulhi_epi16(
+                _mm_adds_epi16(_mm_adds_epi16(a00, a01), a02), one_third);
+            rb02 = _mm_mulhi_epi16(
+                _mm_adds_epi16(_mm_adds_epi16(b00, b01), b02), one_third);
 
             // Accumulate rows 0, 1, 2 for dst0
-            tmp0 = _mm_mulhi_epi16(_mm_adds_epi16(_mm_adds_epi16(ra00, ra01), ra02), one_third);
-            tmp1 = _mm_mulhi_epi16(_mm_adds_epi16(_mm_adds_epi16(rb00, rb01), rb02), one_third);
+            tmp0 = _mm_mulhi_epi16(
+                _mm_adds_epi16(_mm_adds_epi16(ra00, ra01), ra02), one_third);
+            tmp1 = _mm_mulhi_epi16(
+                _mm_adds_epi16(_mm_adds_epi16(rb00, rb01), rb02), one_third);
             pack16to8(tmp0, tmp1, res);
             _mm_store_si128(dst0++, res);
 
@@ -147,16 +157,23 @@ void boxSSE(uint8_t* in, uint8_t* blurred, int width, int height) {
             unpack8to16(s00, a00, b00);
             unpack8to16(s01, a01, b01);
             unpack8to16(s02, a02, b02);
-            ra00 = _mm_mulhi_epi16(_mm_adds_epi16(_mm_adds_epi16(a00, a01), a02), one_third);
-            rb00 = _mm_mulhi_epi16(_mm_adds_epi16(_mm_adds_epi16(b00, b01), b02), one_third);
+            ra00 = _mm_mulhi_epi16(
+                _mm_adds_epi16(_mm_adds_epi16(a00, a01), a02), one_third);
+            rb00 = _mm_mulhi_epi16(
+                _mm_adds_epi16(_mm_adds_epi16(b00, b01), b02), one_third);
 
             // Accumulate rows 1, 2, 3 for dst1
-            tmp0 = _mm_mulhi_epi16(_mm_adds_epi16(_mm_adds_epi16(ra01, ra02), ra00), one_third);
-            tmp1 = _mm_mulhi_epi16(_mm_adds_epi16(_mm_adds_epi16(rb01, rb02), rb00), one_third);
+            tmp0 = _mm_mulhi_epi16(
+                _mm_adds_epi16(_mm_adds_epi16(ra01, ra02), ra00), one_third);
+            tmp1 = _mm_mulhi_epi16(
+                _mm_adds_epi16(_mm_adds_epi16(rb01, rb02), rb00), one_third);
             pack16to8(tmp0, tmp1, res);
             _mm_store_si128(dst1++, res);
 
-            row0 += 16; row1 += 16; row2 += 16; row3 += 16;
+            row0 += 16;
+            row1 += 16;
+            row2 += 16;
+            row3 += 16;
         }
         dst0 += width / 16;
         dst1 += width / 16;
@@ -168,11 +185,11 @@ void box(uint8_t* in, uint8_t* blurred, int width, int height, int numThreads) {
 #if defined(__ARM_NEON) || defined(__aarch64__)
     testing::box_hwy(in, blurred, width, height);
 #else
-    #if HWY_TARGET == HWY_AVX2
-        boxSSE(in, blurred, width, height);
-    #else
-        boxNaive(in, blurred, width, height);
-    #endif
+#if HWY_TARGET == HWY_AVX2
+    boxSSE(in, blurred, width, height);
+#else
+    boxNaive(in, blurred, width, height);
+#endif
 #endif
 }
 }  // namespace ndb

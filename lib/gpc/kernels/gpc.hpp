@@ -58,7 +58,6 @@ void gpcFilter(uint8_t* in,
                int width,
                int height);
 
-
 /**
  * @brief Applies a gpc filter defined by the pixel-difference tests in
  * fastmask. Naive implementation
@@ -131,24 +130,22 @@ void gpcFilterTauNaive(uint8_t* in,
 #if (HWY_ARCH_X86) && (HWY_TARGET == HWY_AVX2)
 bool isAllZeros(__m128i xmm);
 void gpcFilterTauSSE(uint8_t* in,
+                     const uint8_t* grad,
+                     uint32_t* gpc,
+                     std::vector<int32_t> fastmask,
+                     std::vector<int> tau,
+                     std::vector<int>& idx,
+                     int width,
+                     int height);
+void gpcFilterSSE(uint8_t* in,
                   const uint8_t* grad,
                   uint32_t* gpc,
                   std::vector<int32_t> fastmask,
-                  std::vector<int> tau,
                   std::vector<int>& idx,
                   int width,
                   int height);
-void gpcFilterSSE(uint8_t* in,
-               const uint8_t* grad,
-               uint32_t* gpc,
-               std::vector<int32_t> fastmask,
-               std::vector<int>& idx,
-               int width,
-               int height);
-
 
 #endif
 
-
-}
+}  // namespace ndb
 #endif

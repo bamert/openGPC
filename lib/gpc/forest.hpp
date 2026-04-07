@@ -61,7 +61,7 @@ inline std::chrono::high_resolution_clock::time_point sysTick() {
     return std::chrono::high_resolution_clock::now();
 }
 inline float tickToMs(std::chrono::high_resolution_clock::time_point t0,
-               std::chrono::high_resolution_clock::time_point t1) {
+                      std::chrono::high_resolution_clock::time_point t1) {
     return std::abs(
         1000. *
         std::chrono::duration_cast<std::chrono::duration<double>>(t1 - t0)
@@ -216,7 +216,7 @@ class Forest {
         std::vector<int>& idx,
         FilterMask& fastmask,
         InferenceSettings& settings);
-        
+
     /**
      * @brief Preprocesses an image. (smooth, binary sobel image and gradient
      * pixel indices)
@@ -228,7 +228,7 @@ class Forest {
      */
     PreprocessedImage preprocessImage(ndb::Buffer<uint8_t>& img,
                                       InferenceSettings settings);
-     /**
+    /**
      * @brief Finds matches between two stereo images based on a given forest
      * mask.
      *
@@ -261,7 +261,7 @@ class Forest {
                                              PreprocessedImage& timg,
                                              FilterMask& forestmask,
                                              InferenceSettings settings);
-                                            
+
     /**
      * @brief Reads text-based forest format and returns a mask for a given
      * image size.

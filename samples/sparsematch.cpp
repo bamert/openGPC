@@ -1,21 +1,20 @@
-#include <iostream>
 #include <hwy/highway.h>
+
+#include <iostream>
 
 #include "gpc/forest.hpp"
 using namespace std;
-std::vector<ndb::Descriptor> gpcFilterDense(uint8_t* in,
-                    const std::vector<int32_t>& fastmask,
-                    int width,
-                    int height) {
+std::vector<ndb::Descriptor> gpcFilterDense(
+    uint8_t* in, const std::vector<int32_t>& fastmask, int width, int height) {
     uint32_t tmp;
     uint32_t usableW = width - 26;
     uint32_t usableH = height - 26;
     std::vector<ndb::Descriptor> out(usableW * usableH);
     int j = 0;
-    for (int y=13;y<height-13;y++) {
-        for (int x=13;x<width-13;x++) {
+    for (int y = 13; y < height - 13; y++) {
+        for (int x = 13; x < width - 13; x++) {
             tmp = 0;
-            int idx = y * width + x; 
+            int idx = y * width + x;
             for (size_t i = 0; i < fastmask.size(); i += 2) {
                 tmp <<= 1;  // shift by one
                 if (*(in + idx + fastmask[i]) > *(in + idx + fastmask[i + 1]))
@@ -56,7 +55,8 @@ int main(int argc, char** argv) {
     gpc::inference::InferenceSettings inferencesettings =
         gpc::inference::InferenceSettings()
             .builder()
-            .gradientThreshold(1) // gradientthres 20: matching ~3ms, 2: matching: ~30ms. 
+            .gradientThreshold(
+                1)  // gradientthres 20: matching ~3ms, 2: matching: ~30ms.
             .verticalTolerance(
                 0)               // 0px tolerance for rectified epipolar matches
             .dispHigh(128)       // limit disparities to 128
@@ -73,7 +73,6 @@ int main(int argc, char** argv) {
     gpc::inference::FilterMask fm =
         forest.readForest(forestPath, simg.cols(), simg.rows());
 
-
     gpc::inference::time_point t0 = gpc::inference::sysTick();
 
     gpc::inference::PreprocessedImage simgP =
@@ -86,10 +85,13 @@ int main(int argc, char** argv) {
     std::vector<ndb::Support> supp =
         forest.rectifiedMatch(simgP, timgP, fm, inferencesettings);
     gpc::inference::time_point t2 = gpc::inference::sysTick();
-    std::cout << "Number of features(s,t): " << simgP.mask.size() << "," << timgP.mask.size() << std::endl;
+    std::cout << "Number of features(s,t): " << simgP.mask.size() << ","
+              << timgP.mask.size() << std::endl;
     std::cout << "Number of matches: " << supp.size() << std::endl;
-    std::cout << "Preprocessing time: " << gpc::inference::tickToMs(t1, t0) << " ms" << std::endl;
-    std::cout << "Matching time: " << gpc::inference::tickToMs(t2, t1) << " ms" << std::endl;
+    std::cout << "Preprocessing time: " << gpc::inference::tickToMs(t1, t0)
+              << " ms" << std::endl;
+    std::cout << "Matching time: " << gpc::inference::tickToMs(t2, t1) << " ms"
+              << std::endl;
     /*
     std::vector<ndb::Descriptor> statesSrc = forest.evalFastMaskOnSubsetSSE(
         simgP.smooth, simgP.grad, simgP.mask, fm, inferencesettings);
@@ -97,10 +99,11 @@ int main(int argc, char** argv) {
         timgP.smooth, timgP.grad, timgP.mask, fm, inferencesettings);
     */
 
-    std::vector<ndb::Descriptor> statesSrc = gpcFilterDense(simgP.smooth.data(), fm.mask, simgP.smooth.cols(), simgP.smooth.rows());
-    std::vector<ndb::Descriptor> statesTar = gpcFilterDense(timgP.smooth.data(), fm.mask, timgP.smooth.cols(), timgP.smooth.rows());
+    std::vector<ndb::Descriptor> statesSrc = gpcFilterDense(
+        simgP.smooth.data(), fm.mask, simgP.smooth.cols(), simgP.smooth.rows());
+    std::vector<ndb::Descriptor> statesTar = gpcFilterDense(
+        timgP.smooth.data(), fm.mask, timgP.smooth.cols(), timgP.smooth.rows());
 
     ndb::Descriptor::serialize("statesSrcLargeS.txt", statesSrc);
     ndb::Descriptor::serialize("statesTarLargeS.txt", statesTar);
-
 }

@@ -36,9 +36,9 @@
 #include <algorithm>
 #include <cmath>  //for log2
 #include <fstream>
+#include <gpc/Feature.hpp>
 #include <gpc/buffer.hpp>
 #include <gpc/kernels/box.hpp>
-#include <gpc/Feature.hpp>
 #include <iostream>
 #include <iterator>
 #include <random>
@@ -51,19 +51,16 @@ using namespace std;
 namespace gpc {
 namespace training {
 void Feature::getDecisions(bool& ref,
-                         bool& pos,
-                         bool& neg,
-                         params& params,
-                         const GPCPatchTriplet& trip) {
-    ref =
-        ((int)trip.ref.feature(params.i) - (int)trip.ref.feature(params.j) <
-         params.tau);
-    pos =
-        ((int)trip.pos.feature(params.i) - (int)trip.pos.feature(params.j) <
-         params.tau);
-    neg =
-        ((int)trip.neg.feature(params.i) - (int)trip.neg.feature(params.j) <
-         params.tau);
+                           bool& pos,
+                           bool& neg,
+                           params& params,
+                           const GPCPatchTriplet& trip) {
+    ref = ((int)trip.ref.feature(params.i) - (int)trip.ref.feature(params.j) <
+           params.tau);
+    pos = ((int)trip.pos.feature(params.i) - (int)trip.pos.feature(params.j) <
+           params.tau);
+    neg = ((int)trip.neg.feature(params.i) - (int)trip.neg.feature(params.j) <
+           params.tau);
 }
 
 Feature::Feature() {
@@ -77,7 +74,7 @@ Feature::Feature() {
 }
 void Feature::sampleHyperplane(int scale, params& params) {
     if (scale == 2) {
-        params.i = params.j;  // s.t. they regenerate each iteration
+        params.i = params.j;            // s.t. they regenerate each iteration
         while (params.i == params.j) {  // i and j need to be distinct
             int i = randIJ7(rng);
             int j = randIJ7(rng);
@@ -90,7 +87,7 @@ void Feature::sampleHyperplane(int scale, params& params) {
             params.j = 280 + (params.jx + 3) + 27 * (params.jy + 3);
         }
     } else if (scale == 1) {
-        params.i = params.j;  // s.t. they regenerate each iteration
+        params.i = params.j;            // s.t. they regenerate each iteration
         while (params.i == params.j) {  // i and j need to be distinct
             int i = randIJ17(rng);
             int j = randIJ17(rng);
@@ -103,7 +100,7 @@ void Feature::sampleHyperplane(int scale, params& params) {
             params.j = 140 + (params.jx + 8) + 27 * (params.jy + 8);
         }
     } else if (scale == 0) {
-        params.i = params.j;  // s.t. they regenerate each iteration
+        params.i = params.j;            // s.t. they regenerate each iteration
         while (params.i == params.j) {  // i and j need to be distinct
             params.i = randIJ27(rng);
             params.j = randIJ27(rng);
@@ -119,11 +116,11 @@ void Feature::sampleHyperplane(int scale, params& params) {
     params.tau = randTAU(rng);
 }
 void Feature::extractAllTriplets(ndb::Buffer<uint8_t>& bwL,
-                        ndb::Buffer<uint8_t>& bwR,
-                        std::vector<ndb::Point>& ref,
-                        std::vector<ndb::Point>& pos,
-                        std::vector<ndb::Point>& neg,
-                        std::vector<GPCPatchTriplet>& triplets) {
+                                 ndb::Buffer<uint8_t>& bwR,
+                                 std::vector<ndb::Point>& ref,
+                                 std::vector<ndb::Point>& pos,
+                                 std::vector<ndb::Point>& neg,
+                                 std::vector<GPCPatchTriplet>& triplets) {
     ndb::Buffer<uint8_t> LL(bwL.rows(), bwL.cols());
     LL.width = bwL.width;
     ndb::box(bwL.data(), LL.data(), bwL.cols(), bwL.rows(), 1);
@@ -174,7 +171,7 @@ void Feature::extractAllTriplets(ndb::Buffer<uint8_t>& bwL,
 }
 
 void Feature::storeAllTriplets(std::vector<GPCPatchTriplet>& data,
-                      std::string path) {
+                               std::string path) {
     ofstream fout;
     fout.open(path, ios::binary | ios::out);
     for (auto& triplet : data) {
@@ -184,13 +181,13 @@ void Feature::storeAllTriplets(std::vector<GPCPatchTriplet>& data,
     }
     fout.close();
 }
-std::vector<Feature::GPCPatchTriplet> Feature::loadAllTriplets(std::string path) {
+std::vector<Feature::GPCPatchTriplet> Feature::loadAllTriplets(
+    std::string path) {
     std::vector<Feature::GPCPatchTriplet> data;
     std::ifstream in(path, std::ifstream::ate | std::ifstream::binary);
     uint32_t filesize = in.tellg();
     if (filesize % ((27 * 27) * 3)) {
-        cout << "ERR: File is not a training set of this feature type"
-             << endl;
+        cout << "ERR: File is not a training set of this feature type" << endl;
         cout << "FS: " << filesize << endl;
         return data;
     }

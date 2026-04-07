@@ -28,18 +28,16 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //
 // Code Author: Niklaus Bamert (bamertn@ethz.ch)
-#include <cassert>
-#include <thread>
-#include <functional>
 #include "gpc/kernels/utils.hpp"
+
+#include <cassert>
+#include <functional>
+#include <thread>
 
 using namespace std;
 
 namespace ndb {
-void arr2ind(const unsigned char* a,
-                                       int n,
-                                       int* ind,
-                                       int* m) {
+void arr2ind(const unsigned char* a, int n, int* ind, int* m) {
 #if HWY_TARGET == HWY_AVX2
     int i, m0, k;
     __m256i msk;
@@ -103,9 +101,5 @@ void parFor(std::function<void(int, int)> const& f,
     // Join
     for (auto& t : threads) t.join();
 }
-
-
-
-
 
 }  // namespace ndb

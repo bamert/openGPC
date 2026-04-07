@@ -31,9 +31,10 @@
 #ifndef __NDB__KERNEL_UTILS
 #define __NDB__KERNEL_UTILS
 
+#include <hwy/highway.h>
+
 #include <cassert>
 #include <thread>
-#include <hwy/highway.h>
 
 #include "gpc/buffer.hpp"
 using namespace std;
@@ -59,10 +60,7 @@ namespace ndb {
  * @param ind output array (indices into n of nonzero elements)
  * @param m   number of elements in output
  */
-void arr2ind(const unsigned char* a,
-                                       int n,
-                                       int* ind,
-                                       int* m);
+void arr2ind(const unsigned char* a, int n, int* ind, int* m);
 
 #if HWY_TARGET == HWY_AVX2
 /**

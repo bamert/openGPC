@@ -31,6 +31,8 @@
 // The Global Patch Collider
 // Shenlong Wang, Sean Ryan Fanello, Christoph Rhemann, Shahram Izadi, Pushmeet
 // Kohli CVPR 2016 Code Author: Niklaus Bamert (bamertn@ethz.ch)
+#include "gpc/Fern.hpp"
+
 #include <Eigen/Dense>
 #include <iomanip>
 #include <iostream>
@@ -38,7 +40,6 @@
 #include <vector>
 
 #include "gpc/Feature.hpp"
-#include "gpc/Fern.hpp"
 
 using namespace std;
 namespace gpc {
@@ -57,11 +58,11 @@ OptimizerSettings ZeroOptimizer(int numResamples,
     return OptimizerSettings(0, 1, numResamples, onlyScoreNonSplitSamples, w1);
 }
 void Fern::evalSplit(std::vector<GPCTriplet_t>& data,
-               std::vector<SplitParams_t>& params,
-               FernSettings fernsetting,
-               OptimizerSettings optsetting,
-               int scoreUntilLevel,
-               splitStats& s) {
+                     std::vector<SplitParams_t>& params,
+                     FernSettings fernsetting,
+                     OptimizerSettings optsetting,
+                     int scoreUntilLevel,
+                     splitStats& s) {
     s.tp = 0;
     s.fn = 0;
     s.fp = 0;
@@ -80,8 +81,7 @@ void Fern::evalSplit(std::vector<GPCTriplet_t>& data,
             bool refDec, posDec, negDec;
 
             // Decisions need to be added into a codeword
-            Feature.getDecisions(
-                refDec, posDec, negDec, params[i], triplet);
+            Feature.getDecisions(refDec, posDec, negDec, params[i], triplet);
             if (refDec) ref++;
             if (posDec) pos++;
             if (negDec) neg++;
@@ -118,8 +118,8 @@ void Fern::evalSplit(std::vector<GPCTriplet_t>& data,
     s.convcomb = (1. - w2) * s.prec + w2 * s.rec;
 }
 void Fern::markSplitSamples(std::vector<GPCTriplet_t>& data,
-                      std::vector<SplitParams_t>& params,
-                      int numParams) {
+                            std::vector<SplitParams_t>& params,
+                            int numParams) {
     for (auto& triplet : data) {
         // Evaluate triplet on all given parameters
         uint64_t ref = 0, pos = 0, neg = 0;
@@ -129,8 +129,7 @@ void Fern::markSplitSamples(std::vector<GPCTriplet_t>& data,
             neg <<= 1;  // shift by one
             bool refDec, posDec, negDec;
 
-            Feature.getDecisions(
-                refDec, posDec, negDec, params[i], triplet);
+            Feature.getDecisions(refDec, posDec, negDec, params[i], triplet);
             if (refDec) ref++;
             if (posDec) pos++;
             if (negDec) neg++;
@@ -147,7 +146,7 @@ void Fern::resetMarkOnSamples(std::vector<GPCTriplet_t>& data) {
 }
 
 void Fern::train(std::vector<GPCTriplet_t>& trainingSamples,
-           OptimizerSettings optsetting) {
+                 OptimizerSettings optsetting) {
     splitStats stats;
     float maxScore = 0.f;
     SplitParams_t bestParams;
@@ -155,9 +154,9 @@ void Fern::train(std::vector<GPCTriplet_t>& trainingSamples,
     fernparams.resize(fernsettings.maxDepth);
 
     cout << setw(7) << "Level" << setw(10) << "Prec" << setw(10) << "Rec"
-         << setw(10) << "Har" << setw(8) << "Tot" << setw(8) << "TP"
-         << setw(8) << "FP" << setw(8) << "FN" << setw(6) << "scale"
-         << setw(5) << "tau" << setw(5) << "i" << setw(5) << "j" << endl;
+         << setw(10) << "Har" << setw(8) << "Tot" << setw(8) << "TP" << setw(8)
+         << "FP" << setw(8) << "FN" << setw(6) << "scale" << setw(5) << "tau"
+         << setw(5) << "i" << setw(5) << "j" << endl;
     if (optsetting.onlyScoreNonSplitSamples_)
         resetMarkOnSamples(trainingSamples);
     for (int level = 0; level < fernsettings.maxDepth; level++) {
@@ -166,8 +165,7 @@ void Fern::train(std::vector<GPCTriplet_t>& trainingSamples,
             // Samples a hyperplane in the requested scale
             Feature.sampleHyperplane(fernsettings.scale, fernparams[level]);
             // Iterates over a small range of tau (intercept)
-            for (int tau = optsetting.taulo_; tau < optsetting.tauhi_;
-                 tau++) {
+            for (int tau = optsetting.taulo_; tau < optsetting.tauhi_; tau++) {
                 fernparams[level].tau = tau;
                 // Score hyperplane set we have so far
                 evalSplit(trainingSamples,
@@ -201,8 +199,6 @@ void Fern::train(std::vector<GPCTriplet_t>& trainingSamples,
 std::vector<Fern::SplitParams_t> Fern::getParameters() { return fernparams; }
 
 int Fern::getScale() { return fernsettings.scale; }
-
-
 
 }  // namespace training
 }  // namespace gpc

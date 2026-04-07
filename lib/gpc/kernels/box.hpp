@@ -48,25 +48,21 @@ namespace ndb {
 void boxNaive(uint8_t* in, uint8_t* blurred, int width, int height);
 
 /**
-   * @brief      boxfilter using SSE2 instructions. Loosely based on
-   *             https://www.ignorantus.com/box_sse2/, published under
-   *             the https://creativecommons.org/publicdomain/zero/1.0/ licence.
-   *
-   * @param      in       input image
-   * @param      blurred  The blurred
-   * @param[in]  width    The width
-   * @param[in]  height   The height
-   * @param[in]  numThreads number of threads to use
-   */
+ * @brief      boxfilter using SSE2 instructions. Loosely based on
+ *             https://www.ignorantus.com/box_sse2/, published under
+ *             the https://creativecommons.org/publicdomain/zero/1.0/ licence.
+ *
+ * @param      in       input image
+ * @param      blurred  The blurred
+ * @param[in]  width    The width
+ * @param[in]  height   The height
+ * @param[in]  numThreads number of threads to use
+ */
 void box(uint8_t* in, uint8_t* blurred, int width, int height, int numThreads);
 
 #if HWY_TARGET == HWY_AVX2
-void boxSSE(uint8_t* in, uint8_t* blurred, int width, int height); 
+void boxSSE(uint8_t* in, uint8_t* blurred, int width, int height);
 #endif
 
-}
+}  // namespace ndb
 #endif
-
-
-
-

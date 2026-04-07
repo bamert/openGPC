@@ -28,12 +28,15 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //
 // Code Author: Niklaus Bamert (bamertn@ethz.ch)
-#include <cassert>
 #include "gpc/kernels/sobel.hpp"
+
+#include <cassert>
+
 #include "gpc/kernels/utils.hpp"
 namespace ndb {
-namespace testing { 
-    void sobel_hwy(uint8_t* in, uint8_t* blurred, int width, int height, uint8_t threshold); 
+namespace testing {
+void sobel_hwy(
+    uint8_t* in, uint8_t* blurred, int width, int height, uint8_t threshold);
 }
 void sobelNaive(
     uint8_t* in, uint8_t* gradient, int width, int height, uint8_t threshold) {
@@ -59,7 +62,8 @@ void sobelNaive(
     // boundary) (unoptimized)
     for (int iy = 1; iy < height - 1; iy++) {
         for (int ix = 0; ix < width; ix++) {
-            // Approximate division by 9 with fixed-point multiplication (2^16/9 = 7282)
+            // Approximate division by 9 with fixed-point multiplication (2^16/9
+            // = 7282)
             int16_t sum_x = (*p11 + *p31 + 2 * *p21 - *p13 - 2 * *p23 - *p33);
             int16_t sum_y = (*p11 + *p13 + 2 * *p12 - *p31 - 2 * *p32 - *p33);
 
@@ -81,23 +85,25 @@ void sobelNaive(
         }
     }
 }
-//#ifdef _INTRINSICS_SSE
+// #ifdef _INTRINSICS_SSE
 #if HWY_TARGET == HWY_AVX2
 #include <immintrin.h>
 
-void sobelSSE(const uint8_t* in, uint8_t* blurred, 
-                            int width, int start, int end, 
-                            uint8_t threshold) {
-    
+void sobelSSE(const uint8_t* in,
+              uint8_t* blurred,
+              int width,
+              int start,
+              int end,
+              uint8_t threshold) {
     __m128i zero = _mm_setzero_si128();
-    __m128i one_ninth = _mm_set1_epi16(7282); // 2^16/9
+    __m128i one_ninth = _mm_set1_epi16(7282);  // 2^16/9
     __m128i binThres = _mm_set1_epi16(threshold * threshold);
 
     for (int y = start; y < end; y++) {
         const uint8_t* row1 = in + y * width;
         const uint8_t* row0 = row1 - width;
         const uint8_t* row2 = row1 + width;
-        
+
         // Output destination for this specific row
         __m128i* dst = (__m128i*)(blurred + y * width + 1);
 
@@ -109,23 +115,31 @@ void sobelSSE(const uint8_t* in, uint8_t* blurred,
 
             // Load and unpack 3x3 neighborhood (excluding center a11/b11)
             unpack8to16(_mm_loadu_si128((__m128i*)(row0 + x - 1)), a00, b00);
-            unpack8to16(_mm_loadu_si128((__m128i*)(row0 + x)),     a01, b01);
+            unpack8to16(_mm_loadu_si128((__m128i*)(row0 + x)), a01, b01);
             unpack8to16(_mm_loadu_si128((__m128i*)(row0 + x + 1)), a02, b02);
 
             unpack8to16(_mm_loadu_si128((__m128i*)(row1 + x - 1)), a10, b10);
             unpack8to16(_mm_loadu_si128((__m128i*)(row1 + x + 1)), a12, b12);
 
             unpack8to16(_mm_loadu_si128((__m128i*)(row2 + x - 1)), a20, b20);
-            unpack8to16(_mm_loadu_si128((__m128i*)(row2 + x)),     a21, b21);
+            unpack8to16(_mm_loadu_si128((__m128i*)(row2 + x)), a21, b21);
             unpack8to16(_mm_loadu_si128((__m128i*)(row2 + x + 1)), a22, b22);
 
             // --- SX Calculation ---
             // Left col (1,2,1)
-            raA = _mm_mulhi_epi16(_mm_add_epi16(_mm_add_epi16(a00, a20), _mm_add_epi16(a10, a10)), one_ninth);
-            rbA = _mm_mulhi_epi16(_mm_add_epi16(_mm_add_epi16(b00, b20), _mm_add_epi16(b10, b10)), one_ninth);
+            raA = _mm_mulhi_epi16(
+                _mm_add_epi16(_mm_add_epi16(a00, a20), _mm_add_epi16(a10, a10)),
+                one_ninth);
+            rbA = _mm_mulhi_epi16(
+                _mm_add_epi16(_mm_add_epi16(b00, b20), _mm_add_epi16(b10, b10)),
+                one_ninth);
             // Right col (-1,-2,-1)
-            raB = _mm_mulhi_epi16(_mm_add_epi16(_mm_add_epi16(a02, a22), _mm_add_epi16(a12, a12)), one_ninth);
-            rbB = _mm_mulhi_epi16(_mm_add_epi16(_mm_add_epi16(b02, b22), _mm_add_epi16(b12, b12)), one_ninth);
+            raB = _mm_mulhi_epi16(
+                _mm_add_epi16(_mm_add_epi16(a02, a22), _mm_add_epi16(a12, a12)),
+                one_ninth);
+            rbB = _mm_mulhi_epi16(
+                _mm_add_epi16(_mm_add_epi16(b02, b22), _mm_add_epi16(b12, b12)),
+                one_ninth);
 
             tmpa = _mm_sub_epi16(raA, raB);
             tmpb = _mm_sub_epi16(rbA, rbB);
@@ -134,11 +148,19 @@ void sobelSSE(const uint8_t* in, uint8_t* blurred,
 
             // --- SY Calculation ---
             // Top row (1,2,1)
-            raA = _mm_mulhi_epi16(_mm_add_epi16(_mm_add_epi16(a00, a02), _mm_add_epi16(a01, a01)), one_ninth);
-            rbA = _mm_mulhi_epi16(_mm_add_epi16(_mm_add_epi16(b00, b02), _mm_add_epi16(b01, b01)), one_ninth);
+            raA = _mm_mulhi_epi16(
+                _mm_add_epi16(_mm_add_epi16(a00, a02), _mm_add_epi16(a01, a01)),
+                one_ninth);
+            rbA = _mm_mulhi_epi16(
+                _mm_add_epi16(_mm_add_epi16(b00, b02), _mm_add_epi16(b01, b01)),
+                one_ninth);
             // Bottom row (-1,-2,-1)
-            raB = _mm_mulhi_epi16(_mm_add_epi16(_mm_add_epi16(a20, a22), _mm_add_epi16(a21, a21)), one_ninth);
-            rbB = _mm_mulhi_epi16(_mm_add_epi16(_mm_add_epi16(b20, b22), _mm_add_epi16(b21, b21)), one_ninth);
+            raB = _mm_mulhi_epi16(
+                _mm_add_epi16(_mm_add_epi16(a20, a22), _mm_add_epi16(a21, a21)),
+                one_ninth);
+            rbB = _mm_mulhi_epi16(
+                _mm_add_epi16(_mm_add_epi16(b20, b22), _mm_add_epi16(b21, b21)),
+                one_ninth);
 
             tmpa = _mm_sub_epi16(raA, raB);
             tmpb = _mm_sub_epi16(rbA, rbB);
@@ -147,8 +169,10 @@ void sobelSSE(const uint8_t* in, uint8_t* blurred,
 
             // --- Thresholding and Packing ---
             pack16to8(
-                _mm_unpacklo_epi8(_mm_cmpgt_epi16(_mm_adds_epi16(sxa, sya), binThres), zero),
-                _mm_unpacklo_epi8(_mm_cmpgt_epi16(_mm_adds_epi16(sxb, syb), binThres), zero),
+                _mm_unpacklo_epi8(
+                    _mm_cmpgt_epi16(_mm_adds_epi16(sxa, sya), binThres), zero),
+                _mm_unpacklo_epi8(
+                    _mm_cmpgt_epi16(_mm_adds_epi16(sxb, syb), binThres), zero),
                 res);
 
             _mm_storeu_si128(dst++, res);
@@ -164,14 +188,14 @@ void sobel(uint8_t* in,
            int numThreads) {
     assert(width % 16 == 0 && "width must be multiple of 16!");
 #if defined(__ARM_NEON) || defined(__aarch64__)
-        sobelNaive(in, blurred, width, height, threshold);
-    //testing::sobel_hwy(in, blurred, width, height, threshold); // not exact!
+    sobelNaive(in, blurred, width, height, threshold);
+    // testing::sobel_hwy(in, blurred, width, height, threshold); // not exact!
 #else
-    #ifndef _INTRINSICS_SSE
-        sobelNaive(in, blurred, width, height, threshold);
-    #else
-        sobelSSE(in, blurred, width, 1, height - 1, threshold);
-    #endif
+#ifndef _INTRINSICS_SSE
+    sobelNaive(in, blurred, width, height, threshold);
+#else
+    sobelSSE(in, blurred, width, 1, height - 1, threshold);
+#endif
 #endif
 }
-} // namespace ndb
+}  // namespace ndb

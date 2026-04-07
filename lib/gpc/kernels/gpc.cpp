@@ -28,8 +28,9 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //
 // Code Author: Niklaus Bamert (bamertn@ethz.ch)
-#include <cassert>
 #include "gpc/kernels/gpc.hpp"
+
+#include <cassert>
 namespace ndb {
 void gpcFilterNaive(uint8_t* in,
                     const uint8_t* grad,
@@ -76,8 +77,7 @@ void gpcFilterTauNaive(uint8_t* in,
         gpc[k] = tmp;
         j++;
     }
-} 
-
+}
 
 #if (HWY_ARCH_X86) && (HWY_TARGET == HWY_AVX2)
 bool isAllZeros(__m128i xmm) {
@@ -85,13 +85,13 @@ bool isAllZeros(__m128i xmm) {
            0xFFFF;
 }
 void gpcFilterSSE(uint8_t* in,
-               const uint8_t* grad,
-               uint32_t* gpc,
-               std::vector<int32_t> fastmask,
-               std::vector<int>& idx,
-               int width,
-               int height) {
-    const int start  = 13; 
+                  const uint8_t* grad,
+                  uint32_t* gpc,
+                  std::vector<int32_t> fastmask,
+                  std::vector<int>& idx,
+                  int width,
+                  int height) {
+    const int start = 13;
     const int end = height - 15;
     __m128i zero = _mm_set1_epi8(0);
     __m128i one = _mm_set1_epi8(1);
@@ -118,8 +118,7 @@ void gpcFilterSSE(uint8_t* in,
                 for (uint8_t i = 0; i < fastmask.size() && i < 64; i += 2) {
                     out[k] |= _mm_and_si128(
                         _mm_cmpgt_epu8(
-                            _mm_lddqu_si128(
-                                (__m128i*)(center + fastmask[i])),
+                            _mm_lddqu_si128((__m128i*)(center + fastmask[i])),
                             _mm_lddqu_si128(
                                 (__m128i*)(center + fastmask[i + 1]))),
                         bitMask);
@@ -153,30 +152,30 @@ void gpcFilter(uint8_t* in,
                std::vector<int32_t> fastmask,
                std::vector<int>& idx,
                int width,
-               int height){
+               int height) {
     assert(width % 16 == 0 && "width must be multiple of 16!");
 #if defined(__ARM_NEON) || defined(__aarch64__)
     // Replace with call to highway
     gpcFilterNaive(in, grad, gpc, fastmask, idx, width, height);
 #else
-    #if (HWY_ARCH_X86) && (HWY_TARGET == HWY_AVX2)
-        gpcFilterSSE(in, grad, gpc, fastmask, idx, width, height);
-    #else 
-        gpcFilterNaive(in, grad, gpc, fastmask, idx, width, height);
+#if (HWY_ARCH_X86) && (HWY_TARGET == HWY_AVX2)
+    gpcFilterSSE(in, grad, gpc, fastmask, idx, width, height);
+#else
+    gpcFilterNaive(in, grad, gpc, fastmask, idx, width, height);
 #endif
 #endif
 }
 
 #if (HWY_ARCH_X86) && (HWY_TARGET == HWY_AVX2)
 void gpcFilterTauSSE(uint8_t* in,
-                  const uint8_t* grad,
-                  uint32_t* gpc,
-                  std::vector<int32_t> fastmask,
-                  std::vector<int> tau,
-                  std::vector<int>& idx,
-                  int width,
-                  int height){
-    const int start  = 13; 
+                     const uint8_t* grad,
+                     uint32_t* gpc,
+                     std::vector<int32_t> fastmask,
+                     std::vector<int> tau,
+                     std::vector<int>& idx,
+                     int width,
+                     int height) {
+    const int start = 13;
     const int end = height - 15;
     __m128i zero = _mm_set1_epi8(0);
     __m128i one = _mm_set1_epi8(1);
@@ -203,8 +202,7 @@ void gpcFilterTauSSE(uint8_t* in,
                 for (uint8_t i = 0; i < fastmask.size() && i < 64; i += 2) {
                     out[k] |= _mm_and_si128(
                         _mm_cmpgt_epu8(
-                            _mm_lddqu_si128(
-                                (__m128i*)(center + fastmask[i])),
+                            _mm_lddqu_si128((__m128i*)(center + fastmask[i])),
                             _mm_subs_epi8(
                                 _mm_lddqu_si128(
                                     (__m128i*)(center + fastmask[i + 1])),
@@ -243,19 +241,17 @@ void gpcFilterTau(uint8_t* in,
                   std::vector<int> tau,
                   std::vector<int>& idx,
                   int width,
-                  int height){
+                  int height) {
     assert(width % 16 == 0 && "width must be multiple of 16!");
 #if defined(__ARM_NEON) || defined(__aarch64__)
     // Replace with call to highway
     gpcFilterTauNaive(in, grad, gpc, fastmask, tau, idx, width, height);
 #else
-    #if (HWY_ARCH_X86) && (HWY_TARGET == HWY_AVX2)
-        gpcFilterTauSSE(in, grad, gpc, fastmask, tau, idx, width, height);
-    #else 
-        gpcFilterTauNaive(in, grad, gpc, fastmask, tau, idx, width, height);
+#if (HWY_ARCH_X86) && (HWY_TARGET == HWY_AVX2)
+    gpcFilterTauSSE(in, grad, gpc, fastmask, tau, idx, width, height);
+#else
+    gpcFilterTauNaive(in, grad, gpc, fastmask, tau, idx, width, height);
 #endif
 #endif
-
 }
-} // namespace ndb
-
+}  // namespace ndb

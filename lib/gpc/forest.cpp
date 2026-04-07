@@ -32,7 +32,7 @@
 // Shenlong Wang, Sean Ryan Fanello, Christoph Rhemann, Shahram Izadi, Pushmeet
 // Kohli CVPR 2016 Code Author: Niklaus Bamert (bamertn@ethz.ch)
 #include <Eigen/Dense>
-//#include <arm_neon.h>
+// #include <arm_neon.h>
 #include <chrono>
 #include <cstring>
 #include <fstream>
@@ -43,32 +43,32 @@
 #include <vector>
 
 // GPC includes
+#include <unordered_map>
+
 #include "gpc/Feature.hpp"
 #include "gpc/SintelOpticalFlow.hpp"
 #include "gpc/SintelStereo.hpp"
 #include "gpc/buffer.hpp"
-#include "gpc/kernels/sobel.hpp"
+#include "gpc/forest.hpp"
+#include "gpc/hashmatch.hpp"
 #include "gpc/kernels/box.hpp"
 #include "gpc/kernels/gpc.hpp"
+#include "gpc/kernels/sobel.hpp"
 #include "gpc/kernels/utils.hpp"
-#include "gpc/hashmatch.hpp"
-#include "gpc/forest.hpp"
-#include <unordered_map>
-
 
 namespace gpc {
 namespace inference {
-    /**
-     * @brief Computes sparse matches on a pair of rectified and smoothed
-     * images. Here the src and tar images refer to the left and right images,
-     * respectively.
-     *
-     * @param src    Preprocessed source(left) image
-     * @param tar    Preprocessed target(right) image
-     * @param fastmask    forest mask of relative integer offsets.
-     *
-     * @return
-     */
+/**
+ * @brief Computes sparse matches on a pair of rectified and smoothed
+ * images. Here the src and tar images refer to the left and right images,
+ * respectively.
+ *
+ * @param src    Preprocessed source(left) image
+ * @param tar    Preprocessed target(right) image
+ * @param fastmask    forest mask of relative integer offsets.
+ *
+ * @return
+ */
 std::vector<ndb::Correspondence> Forest::depthPriorFast(
     PreprocessedImage& src,
     PreprocessedImage& tar,
@@ -87,12 +87,13 @@ std::vector<ndb::Correspondence> Forest::depthPriorFast(
     }
     // Use sort method for matching
     if (settings.useHashtable_ == false) {
-    t0 = sysTick();
+        t0 = sysTick();
         std::vector<ndb::Correspondence> corr =
             findCorrespondences(statesSrc, statesTar);
-    t1 = sysTick();
-    std::cout << "findCorrespondences (without allocation): " << gpc::inference::tickToMs(t1, t0) << " ms" << std::endl;
-    std::cout << "length src: " << statesSrc.size() << std::endl;
+        t1 = sysTick();
+        std::cout << "findCorrespondences (without allocation): "
+                  << gpc::inference::tickToMs(t1, t0) << " ms" << std::endl;
+        std::cout << "length src: " << statesSrc.size() << std::endl;
         return corr;
     }
     // Use hashtable matching
@@ -100,9 +101,8 @@ std::vector<ndb::Correspondence> Forest::depthPriorFast(
         for (auto& q : statesSrc) q.srcDescr = true;
         for (auto& q : statesTar) q.srcDescr = false;
 
-        ndb::Hashmatch<ndb::Descriptor> hm(
-            214673,  
-            statesSrc.size() + statesTar.size());
+        ndb::Hashmatch<ndb::Descriptor> hm(214673,
+                                           statesSrc.size() + statesTar.size());
         std::vector<std::pair<ndb::Descriptor, ndb::Descriptor>> corr;
         for (auto& q : statesSrc) hm.insert(q);
         for (auto& q : statesTar) hm.insert(q);
@@ -110,8 +110,7 @@ std::vector<ndb::Correspondence> Forest::depthPriorFast(
         // Store vertices in a format that is more convenient for us:
         std::vector<ndb::Correspondence> corr2;
         for (auto& e : corr) {
-            corr2.push_back(
-                ndb::Correspondence(e.first.point, e.second.point));
+            corr2.push_back(ndb::Correspondence(e.first.point, e.second.point));
         }
 
         return corr2;
@@ -207,7 +206,7 @@ std::vector<ndb::Descriptor> Forest::evalFastMaskOnSubsetSSE(
  * @return the preprocessed image
  */
 PreprocessedImage Forest::preprocessImage(ndb::Buffer<uint8_t>& img,
-                                  InferenceSettings settings) {
+                                          InferenceSettings settings) {
     assert((settings.gradientThreshold_ >= 0 &&
             settings.gradientThreshold_ <= 255) &&
            "gradientThreshold needs to be within 0...255");
@@ -221,11 +220,11 @@ PreprocessedImage Forest::preprocessImage(ndb::Buffer<uint8_t>& img,
              img.cols(),
              img.rows(),
              settings.numThreads_);
-    //4.2 *10^-5 ms
+    // 4.2 *10^-5 ms
     smooth.clearBoundary();
     ndb::Buffer<uint8_t> grad(img.rows(), img.cols());
     grad.width = img.width;
-    //4.2*10-5ms (unclear how)
+    // 4.2*10-5ms (unclear how)
     ndb::sobel(img.data(),
                grad.data(),
                img.cols(),
@@ -265,21 +264,20 @@ PreprocessedImage Forest::preprocessImage(ndb::Buffer<uint8_t>& img,
  * @return                  Set of correspondences (ptSrc, ptTar) where
  * ptSrc and ptTar are points in the source and target images, respectively.
  */
-std::vector<ndb::Correspondence> Forest::stereoMatch(PreprocessedImage& simg,
-                                             PreprocessedImage& timg,
-                                             FilterMask& forestmask,
-                                             InferenceSettings settings) {
+std::vector<ndb::Correspondence> Forest::stereoMatch(
+    PreprocessedImage& simg,
+    PreprocessedImage& timg,
+    FilterMask& forestmask,
+    InferenceSettings settings) {
     // make sure the delivered mask matches the image dimensions
-    assert(
-        (forestmask.width == simg.smooth.cols() &&
-         forestmask.height == simg.smooth.rows()) &&
-        "Source Image: dimension does not fit dimension of supplied forest "
-        "mask");
-    assert(
-        (forestmask.width == timg.smooth.cols() &&
-         forestmask.height == simg.smooth.rows()) &&
-        "Targe Image: dimension does not fit dimension of supplied forest "
-        "mask");
+    assert((forestmask.width == simg.smooth.cols() &&
+            forestmask.height == simg.smooth.rows()) &&
+           "Source Image: dimension does not fit dimension of supplied forest "
+           "mask");
+    assert((forestmask.width == timg.smooth.cols() &&
+            forestmask.height == simg.smooth.rows()) &&
+           "Targe Image: dimension does not fit dimension of supplied forest "
+           "mask");
     bool m_debug = false;
     // Match
     std::vector<ndb::Correspondence> corr =
@@ -303,9 +301,9 @@ std::vector<ndb::Correspondence> Forest::stereoMatch(PreprocessedImage& simg,
  * of a point in the left image and d the disparity.
  */
 std::vector<ndb::Support> Forest::rectifiedMatch(PreprocessedImage& simg,
-                                         PreprocessedImage& timg,
-                                         FilterMask& forestmask,
-                                         InferenceSettings settings) {
+                                                 PreprocessedImage& timg,
+                                                 FilterMask& forestmask,
+                                                 InferenceSettings settings) {
     // Do matching
     std::vector<ndb::Correspondence> corr =
         stereoMatch(simg, timg, forestmask, settings);
@@ -379,4 +377,4 @@ FilterMask Forest::readForest(std::string path, int width, int height) {
 }
 
 }  // namespace inference
-}
+}  // namespace gpc
