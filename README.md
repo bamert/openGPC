@@ -1,3 +1,5 @@
+
+
 openGPC 
 ===
 
@@ -39,7 +41,7 @@ All examples have default parameters and run out of the box. Upon calling
 the executables without arguments, usage information is displayed.
 
 - `extract`: Mines a dataset from the Sintel dataset and stores it in an intermediary 
-binary format. **Requires** the OpticalFlow dataset to be present (see section above)
+binary format. **Requires** the OpticalFlow dataset to be present (see section above). By default, `extract` reads the dataset from `../../data/MPI-Sintel-complete` (relative to `samples/build`).
 - `train`: Trains a forest based on the dataset mined with `extract`.
 **Requires** a previously extracted dataset, produced by extract
 - `sparsematch`: Sparse matching based on pretrained forest. Outputs disparity estimate
@@ -77,4 +79,3 @@ This software is licensed under the BSD 3-Clause License
     ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
     (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
